@@ -13,6 +13,8 @@ def test_loads_dev_configuration_with_defaults() -> None:
     assert settings.airflow.dags["customer_ingestion_dag"].schedule == "@hourly"
     assert settings.splink.match_threshold == 0.95
     assert settings.logging.level == "INFO"
+    assert settings.ingestion.sources["salesforce"].target_table.endswith("salesforce_customer_bronze")
+    assert settings.ingestion.sources["product_usage"].source_type == "csv"
     assert settings.domo.dataset_prefix == "customer360_dev"
 
 
@@ -23,6 +25,18 @@ def test_config_manager_expands_environment_values(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("SNOWFLAKE_ROLE", "svc_role")
     monkeypatch.setenv("DOMO_CLIENT_ID", "domo_id")
     monkeypatch.setenv("DOMO_CLIENT_SECRET", "domo_secret")
+    monkeypatch.setenv("SALESFORCE_API_BASE_URL", "https://salesforce.example.com")
+    monkeypatch.setenv("SALESFORCE_API_TOKEN", "salesforce_token")
+    monkeypatch.setenv("MARKETO_API_BASE_URL", "https://marketo.example.com")
+    monkeypatch.setenv("MARKETO_API_TOKEN", "marketo_token")
+    monkeypatch.setenv("ZENDESK_API_BASE_URL", "https://zendesk.example.com")
+    monkeypatch.setenv("ZENDESK_API_TOKEN", "zendesk_token")
+    monkeypatch.setenv("PRODUCT_USAGE_API_BASE_URL", "https://usage.example.com")
+    monkeypatch.setenv("PRODUCT_USAGE_API_TOKEN", "usage_token")
+    monkeypatch.setenv("LICENSING_API_BASE_URL", "https://licensing.example.com")
+    monkeypatch.setenv("LICENSING_API_TOKEN", "licensing_token")
+    monkeypatch.setenv("IMPARTNER_API_BASE_URL", "https://impartner.example.com")
+    monkeypatch.setenv("IMPARTNER_API_TOKEN", "impartner_token")
 
     manager = ConfigManager(environment="prod")
 
@@ -45,6 +59,8 @@ def test_missing_required_environment_variable_raises(
         "SNOWFLAKE_ROLE",
         "DOMO_CLIENT_ID",
         "DOMO_CLIENT_SECRET",
+        "SALESFORCE_API_BASE_URL",
+        "SALESFORCE_API_TOKEN",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -85,6 +101,17 @@ splink:
 logging:
   pipeline_execution_log_table: CUSTOMER360_DB.ANALYTICS.pipeline_execution_log
   etl_audit_log_table: CUSTOMER360_DB.ANALYTICS.etl_audit_log
+ingestion:
+  sources:
+    salesforce:
+      source_system: SALESFORCE
+      source_object: ACCOUNT
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.salesforce_customer_bronze
+      primary_key: customer_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/salesforce_customer.csv
 domo:
   api_host: https://api.domo.com
   client_id: id

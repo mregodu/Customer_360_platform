@@ -80,6 +80,75 @@ pipeline:
   matching_threshold: 0.95
   cdc_column: last_modified_timestamp
   audit_history_enabled: true
+ingestion:
+  default_batch_size: 10000
+  retry:
+    max_attempts: 3
+    initial_delay_seconds: 1
+    max_delay_seconds: 30
+    backoff_multiplier: 2.0
+    retryable_status_codes: [429, 500, 502, 503, 504]
+  sources:
+    salesforce:
+      enabled: true
+      source_system: SALESFORCE
+      source_object: ACCOUNT
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.salesforce_customer_bronze
+      primary_key: customer_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/salesforce_customer.csv
+    marketo:
+      enabled: true
+      source_system: MARKETO
+      source_object: LEAD
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.marketo_lead_bronze
+      primary_key: lead_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/marketo_lead.csv
+    zendesk:
+      enabled: true
+      source_system: ZENDESK
+      source_object: SUPPORT_ACCOUNT
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.zendesk_support_bronze
+      primary_key: support_account_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/zendesk_support.csv
+    product_usage:
+      enabled: true
+      source_system: PRODUCT_USAGE
+      source_object: USAGE_DAILY
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.product_usage_bronze
+      primary_key: usage_event_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/product_usage.csv
+    licensing:
+      enabled: true
+      source_system: LICENSING
+      source_object: LICENSE
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.licensing_customer_bronze
+      primary_key: license_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/licensing_customer.csv
+    impartner:
+      enabled: true
+      source_system: IMPARTNER
+      source_object: PARTNER
+      source_type: csv
+      target_table: CUSTOMER360_DB.BRONZE.impartner_partner_bronze
+      primary_key: partner_id
+      watermark_column: last_modified_timestamp
+      csv:
+        path: data/raw/impartner_partner.csv
 domo:
   api_host: ${DOMO_API_HOST:-https://api.domo.com}
   client_id: ${DOMO_CLIENT_ID:-dev_domo_client_id}
