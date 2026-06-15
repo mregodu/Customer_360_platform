@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "customer360-platform"
+version = "0.1.0"
+description = "Enterprise Customer 360 Data Enrichment Platform using Snowflake, Airflow, dbt, Splink, Great Expectations, and Domo."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Customer 360 Data Engineering" }]
+dynamic = ["dependencies"]
+
+[project.scripts]
+customer360 = "customer360.interfaces.cli.main:main"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests", "airflow"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+ignore_missing_imports = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+addopts = "--cov=customer360 --cov-report=term-missing"
+testpaths = ["tests"]
+pythonpath = ["src"]

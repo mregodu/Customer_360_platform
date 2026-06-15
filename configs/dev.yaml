@@ -1,0 +1,14 @@
+environment: dev
+snowflake:
+  account: ${SNOWFLAKE_ACCOUNT}
+  user: ${SNOWFLAKE_USER}
+  role: ${SNOWFLAKE_ROLE}
+  warehouse: ${SNOWFLAKE_WAREHOUSE}
+  database: CUSTOMER360_DB
+  schema: LANDING
+pipeline:
+  batch_size: 10000
+  freshness_hours: 24
+  matching_threshold: 0.95
+domo:
+  api_host: ${DOMO_API_HOST}

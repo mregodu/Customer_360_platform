@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: landing
+    database: CUSTOMER360_DB
+    schema: LANDING
+    tables:
+      - name: salesforce_customer
+        description: Raw Salesforce extract staged before bronze ingestion.

@@ -1,0 +1,14 @@
+environment: test
+snowflake:
+  account: ${SNOWFLAKE_ACCOUNT}
+  user: ${SNOWFLAKE_USER}
+  role: ${SNOWFLAKE_ROLE}
+  warehouse: TEST_WH
+  database: CUSTOMER360_TEST_DB
+  schema: LANDING
+pipeline:
+  batch_size: 1000
+  freshness_hours: 24
+  matching_threshold: 0.95
+domo:
+  api_host: ${DOMO_API_HOST}

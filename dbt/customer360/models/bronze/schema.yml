@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: salesforce_customer_bronze
+    description: Raw Salesforce customer records loaded exactly as received with audit columns.
+    columns:
+      - name: customer_id
+        tests: [not_null]
+      - name: source_system
+        tests: [not_null]
