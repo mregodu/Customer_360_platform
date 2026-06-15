@@ -1,14 +1,90 @@
 environment: dev
 snowflake:
-  account: ${SNOWFLAKE_ACCOUNT}
-  user: ${SNOWFLAKE_USER}
-  role: ${SNOWFLAKE_ROLE}
-  warehouse: ${SNOWFLAKE_WAREHOUSE}
+  account: ${SNOWFLAKE_ACCOUNT:-local-dev}
+  user: ${SNOWFLAKE_USER:-customer360_dev}
+  password: ${SNOWFLAKE_PASSWORD:-local_password}
+  role: ${SNOWFLAKE_ROLE:-CUSTOMER360_DEV_ROLE}
+  warehouse: ${SNOWFLAKE_WAREHOUSE:-CUSTOMER360_DEV_WH}
   database: CUSTOMER360_DB
   schema: LANDING
+  authenticator: snowflake
+  login_timeout_seconds: 30
+  query_timeout_seconds: 300
+airflow:
+  airflow_home: ${AIRFLOW_HOME:-./airflow}
+  dag_owner: customer360-data-engineering
+  schedule_timezone: America/Chicago
+  max_active_runs: 1
+  catchup: false
+  email_on_failure: false
+  retries: 1
+  retry_delay_minutes: 5
+  default_pool: default_pool
+  dags:
+    customer_ingestion_dag:
+      schedule: "@hourly"
+      enabled: true
+    customer_standardization_dag:
+      schedule: "@hourly"
+      enabled: true
+    customer_matching_dag:
+      schedule: "0 2 * * *"
+      enabled: true
+    customer_enrichment_dag:
+      schedule: "0 3 * * *"
+      enabled: true
+    dashboard_refresh_dag:
+      schedule: "0 4 * * *"
+      enabled: true
+splink:
+  sql_dialect: snowflake
+  link_type: link_and_dedupe
+  unique_id_column: source_customer_id
+  source_dataset_column: source_system
+  match_threshold: 0.95
+  deterministic_rules:
+    - "l.email = r.email"
+    - "l.phone = r.phone"
+    - "l.company_name = r.company_name"
+  blocking_rules:
+    - "l.email = r.email"
+    - "l.phone = r.phone"
+    - "l.company_name = r.company_name"
+  comparisons:
+    - column: company_name
+      method: jaro_winkler
+      threshold: 0.92
+    - column: email
+      method: exact
+    - column: phone
+      method: exact
+    - column: address
+      method: levenshtein
+      threshold: 0.88
+    - column: website_domain
+      method: exact
+  retain_matching_columns: true
+  max_iterations: 20
+  output_table: CUSTOMER360_DB.GOLD.customer_match_predictions
+  cluster_table: CUSTOMER360_DB.GOLD.customer_clusters
+logging:
+  level: INFO
+  renderer: json
+  enable_structured_logging: true
+  pipeline_execution_log_table: CUSTOMER360_DB.ANALYTICS.pipeline_execution_log
+  etl_audit_log_table: CUSTOMER360_DB.ANALYTICS.etl_audit_log
+  retention_days: 30
 pipeline:
   batch_size: 10000
   freshness_hours: 24
   matching_threshold: 0.95
+  cdc_column: last_modified_timestamp
+  audit_history_enabled: true
 domo:
-  api_host: ${DOMO_API_HOST}
+  api_host: ${DOMO_API_HOST:-https://api.domo.com}
+  client_id: ${DOMO_CLIENT_ID:-dev_domo_client_id}
+  client_secret: ${DOMO_CLIENT_SECRET:-dev_domo_client_secret}
+  access_token: ${DOMO_ACCESS_TOKEN:-}
+  dataset_prefix: customer360_dev
+  timeout_seconds: 30
+  retry_attempts: 3
