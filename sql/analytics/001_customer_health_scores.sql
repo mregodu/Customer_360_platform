@@ -1,10 +1,171 @@
--- Analytics table supports Domo customer health and renewal reporting.
-create table if not exists CUSTOMER360_DB.ANALYTICS.customer_health_scores (
-    golden_customer_id varchar,
-    lifetime_value number(18,2),
-    engagement_score float,
-    adoption_score float,
-    renewal_probability float,
+-- Analytics tables support Domo dashboards, customer health reporting, and operations monitoring.
+
+use role SYSADMIN;
+use database CUSTOMER360_DB;
+use schema ANALYTICS;
+
+create table if not exists customer_health_scores (
+    golden_customer_id varchar not null,
+    score_date date not null,
+    company_name varchar,
+    email varchar,
+    industry varchar,
+    lifetime_value number(18, 2),
+    engagement_score number(10, 4),
+    adoption_score number(10, 4),
+    renewal_probability number(10, 4),
+    support_activity_score number(10, 4),
+    satisfaction_score number(10, 4),
+    support_ticket_count number(18, 0),
+    active_users number(18, 0),
+    churn_risk_score number(10, 4),
+    health_class varchar not null,
+    classification_reason varchar,
+    model_version varchar,
+    scored_at timestamp_ntz not null default current_timestamp(),
+    load_batch_id varchar,
+    primary key (golden_customer_id, score_date) not enforced
+)
+cluster by (score_date, health_class, golden_customer_id)
+comment = 'Domo-ready customer health, renewal, and churn-risk scores';
+
+create table if not exists executive_customer_kpis_daily (
+    metric_date date not null,
+    total_customers number(18, 0),
+    new_customers number(18, 0),
+    active_customers number(18, 0),
+    high_engagement_customers number(18, 0),
+    at_risk_customers number(18, 0),
+    churn_risk_customers number(18, 0),
+    total_lifetime_value number(18, 2),
+    average_engagement_score number(10, 4),
+    average_adoption_score number(10, 4),
+    average_renewal_probability number(10, 4),
+    duplicate_reduction_rate number(10, 4),
+    match_accuracy_estimate number(10, 4),
+    data_quality_score number(10, 4),
+    refreshed_at timestamp_ntz not null default current_timestamp(),
+    primary key (metric_date) not enforced
+)
+cluster by (metric_date)
+comment = 'Executive dashboard daily KPI snapshot';
+
+create table if not exists customer_success_account_daily (
+    golden_customer_id varchar not null,
+    metric_date date not null,
+    company_name varchar,
+    industry varchar,
+    customer_status varchar,
     health_class varchar,
-    scored_at timestamp_ntz default current_timestamp()
-);
+    renewal_probability number(10, 4),
+    engagement_score number(10, 4),
+    adoption_score number(10, 4),
+    support_ticket_count number(18, 0),
+    satisfaction_score number(10, 4),
+    active_users number(18, 0),
+    license_expiration_date date,
+    renewal_status varchar,
+    owner_team varchar,
+    refreshed_at timestamp_ntz not null default current_timestamp(),
+    primary key (golden_customer_id, metric_date) not enforced
+)
+cluster by (metric_date, health_class, golden_customer_id)
+comment = 'Customer Success dashboard account-level daily snapshot';
+
+create table if not exists partner_performance_daily (
+    partner_id varchar not null,
+    metric_date date not null,
+    company_name varchar,
+    partner_tier varchar,
+    partner_region varchar,
+    partner_status varchar,
+    certification_count number(18, 0),
+    influenced_customer_count number(18, 0),
+    influenced_lifetime_value number(18, 2),
+    active_customer_count number(18, 0),
+    average_customer_health_score number(10, 4),
+    refreshed_at timestamp_ntz not null default current_timestamp(),
+    primary key (partner_id, metric_date) not enforced
+)
+cluster by (metric_date, partner_region, partner_tier)
+comment = 'Partner dashboard daily performance and certification snapshot';
+
+create table if not exists data_quality_metrics (
+    metric_id varchar not null,
+    run_id varchar not null,
+    source_system varchar,
+    schema_name varchar not null,
+    table_name varchar not null,
+    rule_name varchar not null,
+    rule_type varchar not null,
+    measured_at timestamp_ntz not null default current_timestamp(),
+    passed_count number(18, 0),
+    failed_count number(18, 0),
+    total_count number(18, 0),
+    quality_score number(10, 4),
+    threshold number(10, 4),
+    status varchar not null,
+    details variant,
+    primary key (metric_id) not enforced
+)
+cluster by (schema_name, table_name, to_date(measured_at))
+comment = 'Great Expectations and data-quality monitoring results';
+
+create table if not exists pipeline_execution_log (
+    pipeline_execution_id varchar not null,
+    pipeline_name varchar not null,
+    run_id varchar not null,
+    environment varchar,
+    source_system varchar,
+    target_table varchar,
+    start_time timestamp_ntz not null,
+    end_time timestamp_ntz,
+    status varchar not null,
+    rows_read number(18, 0),
+    rows_inserted number(18, 0),
+    rows_updated number(18, 0),
+    rows_deleted number(18, 0),
+    error_message varchar,
+    metadata variant,
+    created_at timestamp_ntz not null default current_timestamp(),
+    primary key (pipeline_execution_id) not enforced
+)
+cluster by (pipeline_name, status, to_date(start_time))
+comment = 'Pipeline-level execution log for operations monitoring';
+
+create table if not exists etl_audit_log (
+    audit_id varchar not null,
+    run_id varchar not null,
+    pipeline_name varchar not null,
+    source_table varchar,
+    transformation_step varchar not null,
+    destination_table varchar,
+    execution_timestamp timestamp_ntz not null default current_timestamp(),
+    row_count number(18, 0),
+    checksum varchar,
+    status varchar not null,
+    details variant,
+    primary key (audit_id) not enforced
+)
+cluster by (pipeline_name, to_date(execution_timestamp))
+comment = 'Step-level ETL lineage and audit table';
+
+create table if not exists domo_dataset_refresh_log (
+    refresh_id varchar not null,
+    dataset_name varchar not null,
+    domo_dataset_id varchar,
+    source_table varchar not null,
+    refresh_started_at timestamp_ntz not null,
+    refresh_completed_at timestamp_ntz,
+    status varchar not null,
+    rows_published number(18, 0),
+    error_message varchar,
+    metadata variant,
+    primary key (refresh_id) not enforced
+)
+cluster by (dataset_name, to_date(refresh_started_at))
+comment = 'Domo dataset refresh history and reconciliation log';
+
+-- Optional performance enhancement for dashboard workloads:
+-- define materialized views or dynamic tables over the daily snapshot tables once
+-- dashboard filter patterns and Domo extract cadence are stable.
