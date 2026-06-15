@@ -19,6 +19,7 @@ from pydantic import (
     StringConstraints,
     ValidationError,
     field_validator,
+    model_validator,
 )
 
 EnvironmentName = Literal["dev", "test", "prod"]
@@ -26,6 +27,9 @@ LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 LogRenderer = Literal["json", "console"]
 SplinkComparisonMethod = Literal["exact", "jaro_winkler", "levenshtein"]
 SplinkLinkType = Literal["dedupe_only", "link_only", "link_and_dedupe"]
+IngestionSourceType = Literal["csv", "api"]
+ApiHttpMethod = Literal["GET", "POST"]
+ApiPaginationStrategy = Literal["none", "page", "offset", "cursor"]
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 _DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[2] / "configs"
@@ -171,6 +175,94 @@ class PipelineConfig(StrictConfigModel):
     audit_history_enabled: bool = True
 
 
+class RetryConfig(StrictConfigModel):
+    """Retry policy for transient source and warehouse failures."""
+
+    max_attempts: PositiveInt = 3
+    initial_delay_seconds: NonNegativeInt = 1
+    max_delay_seconds: PositiveInt = 30
+    backoff_multiplier: float = Field(default=2.0, ge=1.0)
+    retryable_status_codes: list[int] = Field(default_factory=lambda: [429, 500, 502, 503, 504])
+
+
+class CsvSourceConfig(StrictConfigModel):
+    """CSV source settings for file-based ingestion."""
+
+    path: NonEmptyStr
+    delimiter: NonEmptyStr = ","
+    encoding: NonEmptyStr = "utf-8"
+    has_header: bool = True
+
+
+class ApiSourceConfig(StrictConfigModel):
+    """API source settings for incremental ingestion."""
+
+    base_url: AnyHttpUrl
+    endpoint: NonEmptyStr
+    method: ApiHttpMethod = "GET"
+    auth_header: NonEmptyStr = "Authorization"
+    auth_scheme: NonEmptyStr = "Bearer"
+    auth_token: SecretStr | None = Field(default=None, repr=False)
+    records_path: NonEmptyStr = "records"
+    next_page_token_path: str | None = None
+    pagination_strategy: ApiPaginationStrategy = "none"
+    page_param: NonEmptyStr = "page"
+    page_size_param: NonEmptyStr = "page_size"
+    cursor_param: NonEmptyStr = "cursor"
+    offset_param: NonEmptyStr = "offset"
+    limit_param: NonEmptyStr = "limit"
+    watermark_param: NonEmptyStr = "updated_since"
+    page_size: PositiveInt = 1000
+    timeout_seconds: PositiveInt = 30
+    static_params: dict[str, str | int | float | bool] = Field(default_factory=dict)
+    static_headers: dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("auth_token", mode="before")
+    @classmethod
+    def _empty_auth_token_to_none(cls, value: object) -> object:
+        if value == "":
+            return None
+        return value
+
+
+class IngestionSourceConfig(StrictConfigModel):
+    """One configured source-to-bronze ingestion mapping."""
+
+    enabled: bool = True
+    source_system: NonEmptyStr
+    source_object: NonEmptyStr
+    source_type: IngestionSourceType
+    target_table: NonEmptyStr
+    primary_key: NonEmptyStr
+    watermark_column: NonEmptyStr
+    batch_size: PositiveInt | None = None
+    csv: CsvSourceConfig | None = None
+    api: ApiSourceConfig | None = None
+
+    @field_validator("source_system", "source_object", mode="before")
+    @classmethod
+    def _normalize_source_names(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.upper()
+        return value
+
+    @model_validator(mode="after")
+    def _validate_source_specific_config(self) -> IngestionSourceConfig:
+        if self.source_type == "csv" and self.csv is None:
+            raise ValueError("CSV ingestion sources require a csv configuration block.")
+        if self.source_type == "api" and self.api is None:
+            raise ValueError("API ingestion sources require an api configuration block.")
+        return self
+
+
+class IngestionConfig(StrictConfigModel):
+    """Settings for source extraction, retries, and bronze loading."""
+
+    default_batch_size: PositiveInt = 10000
+    retry: RetryConfig = Field(default_factory=RetryConfig)
+    sources: dict[NonEmptyStr, IngestionSourceConfig]
+
+
 class DomoConfig(StrictConfigModel):
     """Domo API endpoint and credential settings."""
 
@@ -209,6 +301,7 @@ class Customer360Config(StrictConfigModel):
     splink: SplinkConfig
     logging: LoggingConfig
     pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
+    ingestion: IngestionConfig
     domo: DomoConfig
 
 
@@ -227,14 +320,21 @@ class ConfigManager:
         self._expected_environment = environment or os.getenv("CUSTOMER360_ENV")
         env_config_path = os.getenv("CUSTOMER360_CONFIG_PATH")
         env_config_dir = os.getenv("CUSTOMER360_CONFIG_DIR")
-        self._config_path = (
-            Path(config_path or env_config_path) if config_path or env_config_path else None
-        )
-        self._config_dir = (
-            Path(config_dir or env_config_dir)
-            if config_dir or env_config_dir
-            else _DEFAULT_CONFIG_DIR
-        )
+        self._config_path: Path | None
+        self._config_dir: Path
+        if config_path is not None:
+            self._config_path = Path(config_path)
+        elif env_config_path is not None:
+            self._config_path = Path(env_config_path)
+        else:
+            self._config_path = None
+
+        if config_dir is not None:
+            self._config_dir = Path(config_dir)
+        elif env_config_dir is not None:
+            self._config_dir = Path(env_config_dir)
+        else:
+            self._config_dir = _DEFAULT_CONFIG_DIR
         self._settings: Customer360Config | None = None
 
     @property

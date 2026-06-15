@@ -80,6 +80,116 @@ pipeline:
   matching_threshold: 0.95
   cdc_column: last_modified_timestamp
   audit_history_enabled: true
+ingestion:
+  default_batch_size: 50000
+  retry:
+    max_attempts: 4
+    initial_delay_seconds: 2
+    max_delay_seconds: 60
+    backoff_multiplier: 2.0
+    retryable_status_codes: [429, 500, 502, 503, 504]
+  sources:
+    salesforce:
+      enabled: true
+      source_system: SALESFORCE
+      source_object: ACCOUNT
+      source_type: api
+      target_table: CUSTOMER360_DB.BRONZE.salesforce_customer_bronze
+      primary_key: customer_id
+      watermark_column: last_modified_timestamp
+      api:
+        base_url: ${SALESFORCE_API_BASE_URL}
+        endpoint: /services/data/v60.0/query
+        auth_token: ${SALESFORCE_API_TOKEN}
+        records_path: records
+        next_page_token_path: nextRecordsUrl
+        pagination_strategy: cursor
+        watermark_param: updated_since
+        page_size: 2000
+    marketo:
+      enabled: true
+      source_system: MARKETO
+      source_object: LEAD
+      source_type: api
+      target_table: CUSTOMER360_DB.BRONZE.marketo_lead_bronze
+      primary_key: lead_id
+      watermark_column: last_modified_timestamp
+      api:
+        base_url: ${MARKETO_API_BASE_URL}
+        endpoint: /rest/v1/leads.json
+        auth_token: ${MARKETO_API_TOKEN}
+        records_path: result
+        next_page_token_path: nextPageToken
+        pagination_strategy: cursor
+        cursor_param: nextPageToken
+        watermark_param: updatedAt
+        page_size: 300
+    zendesk:
+      enabled: true
+      source_system: ZENDESK
+      source_object: SUPPORT_ACCOUNT
+      source_type: api
+      target_table: CUSTOMER360_DB.BRONZE.zendesk_support_bronze
+      primary_key: support_account_id
+      watermark_column: last_modified_timestamp
+      api:
+        base_url: ${ZENDESK_API_BASE_URL}
+        endpoint: /api/v2/incremental/tickets/cursor.json
+        auth_token: ${ZENDESK_API_TOKEN}
+        records_path: tickets
+        next_page_token_path: after_cursor
+        pagination_strategy: cursor
+        cursor_param: cursor
+        watermark_param: start_time
+        page_size: 1000
+    product_usage:
+      enabled: true
+      source_system: PRODUCT_USAGE
+      source_object: USAGE_DAILY
+      source_type: api
+      target_table: CUSTOMER360_DB.BRONZE.product_usage_bronze
+      primary_key: usage_event_id
+      watermark_column: last_modified_timestamp
+      api:
+        base_url: ${PRODUCT_USAGE_API_BASE_URL}
+        endpoint: /v1/usage/daily
+        auth_token: ${PRODUCT_USAGE_API_TOKEN}
+        records_path: data
+        pagination_strategy: offset
+        watermark_param: updated_since
+        page_size: 5000
+    licensing:
+      enabled: true
+      source_system: LICENSING
+      source_object: LICENSE
+      source_type: api
+      target_table: CUSTOMER360_DB.BRONZE.licensing_customer_bronze
+      primary_key: license_id
+      watermark_column: last_modified_timestamp
+      api:
+        base_url: ${LICENSING_API_BASE_URL}
+        endpoint: /v1/licenses
+        auth_token: ${LICENSING_API_TOKEN}
+        records_path: data
+        pagination_strategy: page
+        watermark_param: updated_since
+        page_size: 1000
+    impartner:
+      enabled: true
+      source_system: IMPARTNER
+      source_object: PARTNER
+      source_type: api
+      target_table: CUSTOMER360_DB.BRONZE.impartner_partner_bronze
+      primary_key: partner_id
+      watermark_column: last_modified_timestamp
+      api:
+        base_url: ${IMPARTNER_API_BASE_URL}
+        endpoint: /api/partners
+        auth_token: ${IMPARTNER_API_TOKEN}
+        records_path: partners
+        pagination_strategy: page
+        watermark_param: updated_since
+        page_size: 1000
 domo:
   api_host: ${DOMO_API_HOST:-https://api.domo.com}
   client_id: ${DOMO_CLIENT_ID}
