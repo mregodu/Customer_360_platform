@@ -231,6 +231,55 @@ class SnowflakeBronzeReader:
         return [dict(zip(columns, row, strict=False)) for row in rows]
 
 
+class SnowflakeTableDataProvider:
+    """Reads Snowflake tables for validation, matching, enrichment, scoring, and Domo publishing."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        connection_factory: SnowflakeConnectionFactory | None = None,
+        default_limit: int | None = None,
+    ) -> None:
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+        self._default_limit = default_limit
+
+    def fetch_table(
+        self,
+        table_name: str,
+        *,
+        where_clause: str | None = None,
+        params: Sequence[object] = (),
+        limit: int | None = None,
+    ) -> Sequence[Mapping[str, object]]:
+        """Fetch table rows as lowercase-keyed dictionaries."""
+        sql = f"select * from {_qualified_name(table_name)}"
+        if where_clause:
+            sql += f" where {where_clause}"
+        resolved_limit = self._default_limit if limit is None else limit
+        if resolved_limit is not None:
+            if resolved_limit <= 0:
+                raise ValueError("Snowflake fetch limit must be greater than zero.")
+            sql += f" limit {resolved_limit}"
+        return self.fetch_query(sql, params=params)
+
+    def fetch_query(
+        self,
+        sql: str,
+        *,
+        params: Sequence[object] = (),
+    ) -> Sequence[Mapping[str, object]]:
+        """Fetch rows for a caller-owned Snowflake query."""
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql, tuple(params))
+                columns = [column[0].lower() for column in cursor.description]
+                rows = cursor.fetchall()
+            finally:
+                cursor.close()
+        return [dict(zip(columns, row, strict=False)) for row in rows]
+
+
 class SnowflakeSilverWriter:
     """Merges transformed Silver records into Snowflake targets."""
 
