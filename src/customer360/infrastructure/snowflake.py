@@ -10,6 +10,7 @@ import json
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from typing import Any
+from uuid import uuid4
 
 
 class SnowflakeCustomerRepository:
@@ -193,6 +194,153 @@ class SnowflakeWatermarkStore:
                 cursor.close()
 
 
+class SnowflakeBronzeReader:
+    """Reads incremental records from Snowflake bronze tables."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def fetch_incremental(
+        self,
+        table_name: str,
+        watermark_column: str,
+        since_watermark: str | None,
+    ) -> Sequence[Mapping[str, object]]:
+        """Fetch bronze rows changed after a watermark."""
+        quoted_table = _qualified_name(table_name)
+        quoted_watermark = _quote_identifier(watermark_column)
+        sql = f"select * from {quoted_table}"
+        params: tuple[object, ...] = tuple()
+        if since_watermark is not None:
+            sql += f" where {quoted_watermark} > %s"
+            params = (since_watermark,)
+        sql += f" order by {quoted_watermark}"
+
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql, params)
+                columns = [column[0].lower() for column in cursor.description]
+                rows = cursor.fetchall()
+            finally:
+                cursor.close()
+        return [dict(zip(columns, row, strict=False)) for row in rows]
+
+
+class SnowflakeSilverWriter:
+    """Merges transformed Silver records into Snowflake targets."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        database_name: str = "CUSTOMER360_DB",
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._database_name = database_name
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def merge_customers(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge records into `SILVER.silver_customer`."""
+        return self._merge_records(
+            f"{self._database_name}.SILVER.silver_customer",
+            records,
+            key_columns=("source_system", "source_customer_id"),
+        )
+
+    def merge_metrics(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge records into `SILVER.silver_customer_metric_daily`."""
+        return self._merge_records(
+            f"{self._database_name}.SILVER.silver_customer_metric_daily",
+            records,
+            key_columns=("source_system", "source_customer_id", "metric_date"),
+        )
+
+    def merge_partners(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge records into `SILVER.silver_partner_profile`."""
+        return self._merge_records(
+            f"{self._database_name}.SILVER.silver_partner_profile",
+            records,
+            key_columns=("source_system", "partner_id"),
+        )
+
+    def write_quality_metrics(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge records into `ANALYTICS.data_quality_metrics`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.data_quality_metrics",
+            records,
+            key_columns=("metric_id",),
+        )
+
+    def _merge_records(
+        self,
+        target_table: str,
+        records: Iterable[Mapping[str, object]],
+        *,
+        key_columns: Sequence[str],
+    ) -> int:
+        rows = [dict(record) for record in records]
+        if not rows:
+            return 0
+
+        columns = _ordered_columns(rows)
+        temp_table = f"TEMP_SILVER_MERGE_{uuid4().hex}"
+        create_temp_sql = (
+            f"create temporary table {_quote_identifier(temp_table)} "
+            f"like {_qualified_name(target_table)}"
+        )
+        merge_sql = _merge_sql(target_table, temp_table, columns, key_columns)
+
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(create_temp_sql)
+                cursor.executemany(
+                    _insert_sql(temp_table, columns),
+                    [
+                        tuple(_serialize_snowflake_value(row.get(column)) for column in columns)
+                        for row in rows
+                    ],
+                )
+                cursor.execute(merge_sql)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                cursor.close()
+        return len(rows)
+
+
+class SnowflakeSqlScriptRunner:
+    """Executes checked-in Snowflake SQL scripts."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def execute_sql(self, sql_text: str) -> None:
+        """Execute one SQL script containing semicolon-delimited statements."""
+        statements = [statement.strip() for statement in sql_text.split(";") if statement.strip()]
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                for statement in statements:
+                    cursor.execute(statement)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                cursor.close()
+
+
 def _ordered_columns(rows: Sequence[Mapping[str, object]]) -> list[str]:
     columns: list[str] = []
     seen: set[str] = set()
@@ -209,6 +357,33 @@ def _insert_sql(table_name: str, columns: Sequence[str]) -> str:
     column_list = ", ".join(_quote_identifier(column) for column in columns)
     placeholders = ", ".join(["%s"] * len(columns))
     return f"insert into {_qualified_name(table_name)} ({column_list}) values ({placeholders})"
+
+
+def _merge_sql(
+    target_table: str,
+    source_table: str,
+    columns: Sequence[str],
+    key_columns: Sequence[str],
+) -> str:
+    join_clause = " and ".join(
+        f"target.{_quote_identifier(column)} = source.{_quote_identifier(column)}"
+        for column in key_columns
+    )
+    update_columns = [column for column in columns if column.lower() not in {key.lower() for key in key_columns}]
+    update_clause = ", ".join(
+        f"target.{_quote_identifier(column)} = source.{_quote_identifier(column)}"
+        for column in update_columns
+    )
+    insert_columns = ", ".join(_quote_identifier(column) for column in columns)
+    insert_values = ", ".join(f"source.{_quote_identifier(column)}" for column in columns)
+    return f"""
+        merge into {_qualified_name(target_table)} target
+        using {_qualified_name(source_table)} source
+        on {join_clause}
+        when matched then update set {update_clause}
+        when not matched then insert ({insert_columns})
+        values ({insert_values})
+    """
 
 
 def _qualified_name(name: str) -> str:
