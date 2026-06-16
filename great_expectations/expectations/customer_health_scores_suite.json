@@ -1,0 +1,60 @@
+{
+  "expectation_suite_name": "customer_health_scores_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {"min_value": 1},
+      "meta": {"rule_name": "customer_health_scores_row_count_positive", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "golden_customer_id", "mostly": 1.0},
+      "meta": {"rule_name": "health_golden_customer_id_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "score_date", "mostly": 1.0},
+      "meta": {"rule_name": "score_date_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_compound_columns_to_be_unique",
+      "kwargs": {"column_list": ["golden_customer_id", "score_date"], "mostly": 1.0},
+      "meta": {"rule_name": "customer_health_score_unique", "rule_type": "uniqueness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {"column": "health_class", "value_set": ["Healthy", "At Risk", "Churn Risk"], "allow_null": false, "mostly": 1.0},
+      "meta": {"rule_name": "health_class_valid", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "churn_risk_score", "min_value": 0, "max_value": 1, "allow_null": false, "mostly": 1.0},
+      "meta": {"rule_name": "churn_risk_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "renewal_probability", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "health_renewal_probability_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {"column": "model_algorithm", "value_set": ["logistic_regression", "random_forest", "xgboost"], "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "model_algorithm_supported", "rule_type": "consistency", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "model_version", "mostly": 1.0},
+      "meta": {"rule_name": "model_version_required", "rule_type": "consistency", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_recent",
+      "kwargs": {"column": "scored_at", "max_age_hours": 24, "mostly": 1.0},
+      "meta": {"rule_name": "customer_health_scores_freshness_24h", "rule_type": "freshness", "severity": "ERROR"}
+    }
+  ],
+  "meta": {
+    "notes": "Production quality suite for Customer Health scoring outputs.",
+    "table_name": "CUSTOMER360_DB.ANALYTICS.customer_health_scores",
+    "owner": "customer360-data-engineering"
+  }
+}

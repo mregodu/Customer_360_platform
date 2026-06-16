@@ -1,9 +1,60 @@
 {
   "expectation_suite_name": "customer_silver_suite",
   "expectations": [
-    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "source_customer_id"}},
-    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "source_system"}},
-    {"expectation_type": "expect_column_values_to_match_regex", "kwargs": {"column": "email", "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", "mostly": 0.95}}
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {"min_value": 1},
+      "meta": {"rule_name": "silver_customer_row_count_positive", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "source_system", "mostly": 1.0},
+      "meta": {"rule_name": "source_system_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "source_customer_id", "mostly": 1.0},
+      "meta": {"rule_name": "source_customer_id_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_compound_columns_to_be_unique",
+      "kwargs": {"column_list": ["source_system", "source_customer_id"], "mostly": 1.0},
+      "meta": {"rule_name": "source_customer_unique", "rule_type": "uniqueness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {"column": "email", "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", "allow_null": true, "mostly": 0.98},
+      "meta": {"rule_name": "email_valid_format", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "completeness_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "completeness_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "data_quality_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "data_quality_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {"column": "is_deleted", "value_set": ["True", "False", "true", "false", "0", "1"], "allow_null": false, "mostly": 1.0},
+      "meta": {"rule_name": "is_deleted_boolean", "rule_type": "consistency", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_pair_values_a_to_be_greater_than_or_equal_to_b",
+      "kwargs": {"column_A": "last_modified_timestamp", "column_B": "created_date", "allow_null": true, "mostly": 0.99},
+      "meta": {"rule_name": "last_modified_after_created", "rule_type": "consistency", "severity": "WARNING"}
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_recent",
+      "kwargs": {"column": "standardized_at", "max_age_hours": 24, "mostly": 1.0},
+      "meta": {"rule_name": "silver_customer_freshness_24h", "rule_type": "freshness", "severity": "ERROR"}
+    }
   ],
-  "meta": {"notes": "Initial quality suite for standardized customer records."}
+  "meta": {
+    "notes": "Production quality suite for standardized Silver customer records.",
+    "table_name": "CUSTOMER360_DB.SILVER.silver_customer",
+    "owner": "customer360-data-engineering"
+  }
 }

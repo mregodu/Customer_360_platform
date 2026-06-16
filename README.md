@@ -12,7 +12,7 @@ Enterprise-grade starter repository for a Customer 360 platform that consolidate
   support health, and renewal probability metrics.
 - Classifies customers as `Healthy`, `At Risk`, or `Churn Risk` using Logistic
   Regression, Random Forest, or XGBoost scoring pipelines.
-- Validates quality with Great Expectations.
+- Validates completeness, uniqueness, validity, consistency, and freshness with Great Expectations.
 - Orchestrates pipelines with Airflow.
 - Serves analytics tables and Domo dashboard extracts.
 

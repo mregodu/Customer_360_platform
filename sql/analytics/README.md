@@ -16,6 +16,13 @@ data-quality metrics, pipeline execution logs, ETL lineage, and Domo refresh log
 - `004_merge_customer_health_model_evaluations.sql`: merges training evaluation
   metrics for Logistic Regression, Random Forest, and XGBoost.
 
+## Data Quality Dashboard
+
+- `005_merge_data_quality_results.sql`: merges Great Expectations metrics,
+  validation run summaries, and alert events.
+- `006_build_data_quality_dashboard_daily.sql`: builds the daily quality dashboard
+  aggregate for Domo and operations monitoring.
+
 ## Engineering Notes
 
 - Keep code and assets aligned with this folder's responsibility.

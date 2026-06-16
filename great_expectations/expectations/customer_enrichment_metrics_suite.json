@@ -1,0 +1,60 @@
+{
+  "expectation_suite_name": "customer_enrichment_metrics_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {"min_value": 1},
+      "meta": {"rule_name": "customer_enrichment_metrics_row_count_positive", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "golden_customer_id", "mostly": 1.0},
+      "meta": {"rule_name": "enrichment_golden_customer_id_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "metric_date", "mostly": 1.0},
+      "meta": {"rule_name": "metric_date_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_compound_columns_to_be_unique",
+      "kwargs": {"column_list": ["golden_customer_id", "metric_date"], "mostly": 1.0},
+      "meta": {"rule_name": "customer_enrichment_metric_unique", "rule_type": "uniqueness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "product_adoption_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "product_adoption_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "engagement_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "engagement_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "support_health_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "support_health_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "renewal_probability", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "renewal_probability_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "lifetime_value", "min_value": 0, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "lifetime_value_non_negative", "rule_type": "consistency", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_recent",
+      "kwargs": {"column": "calculated_at", "max_age_hours": 24, "mostly": 1.0},
+      "meta": {"rule_name": "customer_enrichment_metrics_freshness_24h", "rule_type": "freshness", "severity": "ERROR"}
+    }
+  ],
+  "meta": {
+    "notes": "Production quality suite for daily customer enrichment metrics.",
+    "table_name": "CUSTOMER360_DB.GOLD.customer_enrichment_metrics",
+    "owner": "customer360-data-engineering"
+  }
+}
