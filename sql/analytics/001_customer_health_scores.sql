@@ -252,18 +252,28 @@ create table if not exists pipeline_execution_log (
     target_table varchar,
     start_time timestamp_ntz not null,
     end_time timestamp_ntz,
+    duration_seconds number(18, 6),
     status varchar not null,
     rows_read number(18, 0),
     rows_inserted number(18, 0),
     rows_updated number(18, 0),
     rows_deleted number(18, 0),
+    rows_processed number(18, 0),
     error_message varchar,
+    error_details variant,
     metadata variant,
     created_at timestamp_ntz not null default current_timestamp(),
     primary key (pipeline_execution_id) not enforced
 )
 cluster by (pipeline_name, status, to_date(start_time))
 comment = 'Pipeline-level execution log for operations monitoring';
+
+alter table if exists pipeline_execution_log
+    add column if not exists duration_seconds number(18, 6);
+alter table if exists pipeline_execution_log
+    add column if not exists rows_processed number(18, 0);
+alter table if exists pipeline_execution_log
+    add column if not exists error_details variant;
 
 create table if not exists etl_audit_log (
     audit_id varchar not null,
@@ -274,13 +284,20 @@ create table if not exists etl_audit_log (
     destination_table varchar,
     execution_timestamp timestamp_ntz not null default current_timestamp(),
     row_count number(18, 0),
+    rows_processed number(18, 0),
     checksum varchar,
     status varchar not null,
+    error_details variant,
     details variant,
     primary key (audit_id) not enforced
 )
 cluster by (pipeline_name, to_date(execution_timestamp))
 comment = 'Step-level ETL lineage and audit table';
+
+alter table if exists etl_audit_log
+    add column if not exists rows_processed number(18, 0);
+alter table if exists etl_audit_log
+    add column if not exists error_details variant;
 
 create table if not exists domo_dataset_refresh_log (
     refresh_id varchar not null,

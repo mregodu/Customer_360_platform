@@ -23,6 +23,15 @@ data-quality metrics, pipeline execution logs, ETL lineage, and Domo refresh log
 - `006_build_data_quality_dashboard_daily.sql`: builds the daily quality dashboard
   aggregate for Domo and operations monitoring.
 
+## Enterprise Audit Logs
+
+- `pipeline_execution_log`: run-level pipeline audit table with start/end time,
+  status, error details, and row counters.
+- `etl_audit_log`: step-level ETL audit table with source, destination, row counts,
+  checksum, status, and structured details.
+- `007_merge_enterprise_audit_logs.sql`: merges staged audit records into both
+  enterprise audit tables.
+
 ## Engineering Notes
 
 - Keep code and assets aligned with this folder's responsibility.
