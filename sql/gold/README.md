@@ -10,6 +10,15 @@ golden customer master records, and enrichment metrics.
 - `customer_match_predictions`: pairwise Splink match probabilities and comparison vectors.
 - `gold_customer_clusters`: final cluster output consumed by golden-record generation.
 - `002_merge_gold_customer_clusters.sql`: merges staged cluster rows into the gold output table.
+- `003_generate_gold_customer_master.sql`: applies survivorship rules and merges trusted
+  records into `gold_customer_master`.
+
+## Survivorship Rules
+
+Golden-record generation chooses field winners by valid value, source priority, data
+quality score, completeness score, recency, and deterministic source ID tie-breakers.
+Company name, email, phone, and address winners are recorded in the
+`survivorship_rules` variant column for auditability.
 
 ## Engineering Notes
 
