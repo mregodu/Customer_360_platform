@@ -46,6 +46,10 @@ After each daily pipeline phase, run data-quality validation:
 2. `analytics/005_merge_data_quality_results.sql`
 3. `analytics/006_build_data_quality_dashboard_daily.sql`
 
+Pipeline and ETL audit events can be staged and merged with:
+
+1. `analytics/007_merge_enterprise_audit_logs.sql`
+
 ## Warehouse Design
 
 - `WH_CUSTOMER360_INGEST`: source extraction and landing-to-bronze loads.

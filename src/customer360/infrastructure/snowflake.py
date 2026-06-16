@@ -655,6 +655,74 @@ class SnowflakeDataQualityWriter:
         return len(rows)
 
 
+class SnowflakeAuditLogWriter:
+    """Persists enterprise pipeline and ETL audit logs."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        database_name: str = "CUSTOMER360_DB",
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._database_name = database_name
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def write_pipeline_execution_log(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge pipeline execution records into `ANALYTICS.pipeline_execution_log`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.pipeline_execution_log",
+            records,
+            key_columns=("pipeline_execution_id",),
+        )
+
+    def write_etl_audit_log(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge ETL audit records into `ANALYTICS.etl_audit_log`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.etl_audit_log",
+            records,
+            key_columns=("audit_id",),
+        )
+
+    def _merge_records(
+        self,
+        target_table: str,
+        records: Iterable[Mapping[str, object]],
+        *,
+        key_columns: Sequence[str],
+    ) -> int:
+        rows = [dict(record) for record in records]
+        if not rows:
+            return 0
+
+        columns = _ordered_columns(rows)
+        temp_table = f"TEMP_AUDIT_LOG_MERGE_{uuid4().hex}"
+        create_temp_sql = (
+            f"create temporary table {_quote_identifier(temp_table)} "
+            f"like {_qualified_name(target_table)}"
+        )
+        merge_sql = _merge_sql(target_table, temp_table, columns, key_columns)
+
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(create_temp_sql)
+                cursor.executemany(
+                    _insert_sql(temp_table, columns),
+                    [
+                        tuple(_serialize_snowflake_value(row.get(column)) for column in columns)
+                        for row in rows
+                    ],
+                )
+                cursor.execute(merge_sql)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                cursor.close()
+        return len(rows)
+
+
 class SnowflakeSqlScriptRunner:
     """Executes checked-in Snowflake SQL scripts."""
 
