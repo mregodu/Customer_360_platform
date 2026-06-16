@@ -66,7 +66,7 @@ splink:
   retain_matching_columns: true
   max_iterations: 20
   output_table: CUSTOMER360_DB.GOLD.customer_match_predictions
-  cluster_table: CUSTOMER360_DB.GOLD.customer_clusters
+  cluster_table: CUSTOMER360_DB.GOLD.gold_customer_clusters
 logging:
   level: INFO
   renderer: json

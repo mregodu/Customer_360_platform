@@ -1,0 +1,39 @@
+model_version: splink_customer_matching_v1
+link_type: link_and_dedupe
+unique_id_column: source_customer_id
+source_dataset_column: source_system
+match_threshold: 0.95
+confidence_threshold: 0.95
+output_table: CUSTOMER360_DB.GOLD.customer_match_predictions
+cluster_table: CUSTOMER360_DB.GOLD.gold_customer_clusters
+blocking_rules:
+  - rule: "l.email = r.email"
+    description: Exact email match.
+  - rule: "l.phone = r.phone"
+    description: Exact normalized phone match.
+  - rule: "l.website_domain = r.website_domain"
+    description: Exact normalized website domain match.
+  - rule: "l.company_name = r.company_name"
+    description: Exact standardized company name match.
+  - rule: "l.address = r.address"
+    description: Exact standardized address match.
+comparisons:
+  - column: company_name
+    method: jaro_winkler
+    threshold: 0.92
+    weight: 0.20
+  - column: email
+    method: exact
+    weight: 0.35
+  - column: phone
+    method: exact
+    weight: 0.25
+  - column: website_domain
+    method: exact
+    weight: 0.10
+  - column: address
+    method: levenshtein
+    threshold: 0.88
+    weight: 0.10
+retain_matching_columns: true
+retain_intermediate_calculation_columns: true
