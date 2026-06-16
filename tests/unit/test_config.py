@@ -12,6 +12,7 @@ def test_loads_dev_configuration_with_defaults() -> None:
     assert settings.snowflake.database == "CUSTOMER360_DB"
     assert settings.airflow.dags["customer_ingestion_dag"].schedule == "@hourly"
     assert settings.splink.match_threshold == 0.95
+    assert settings.splink.cluster_table == "CUSTOMER360_DB.GOLD.gold_customer_clusters"
     assert settings.logging.level == "INFO"
     assert settings.ingestion.sources["salesforce"].target_table.endswith("salesforce_customer_bronze")
     assert settings.ingestion.sources["product_usage"].source_type == "csv"

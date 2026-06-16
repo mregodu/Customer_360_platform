@@ -27,6 +27,10 @@ After bronze ingestion completes, run these Silver transformation scripts with
 3. `silver/004_merge_silver_partner_profile.sql`
 4. `silver/005_insert_silver_data_quality_metrics.sql`
 
+After the Splink matching job stages cluster rows, run:
+
+1. `gold/002_merge_gold_customer_clusters.sql`
+
 ## Warehouse Design
 
 - `WH_CUSTOMER360_INGEST`: source extraction and landing-to-bronze loads.
