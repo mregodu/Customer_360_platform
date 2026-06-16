@@ -12,6 +12,13 @@ golden customer master records, and enrichment metrics.
 - `002_merge_gold_customer_clusters.sql`: merges staged cluster rows into the gold output table.
 - `003_generate_gold_customer_master.sql`: applies survivorship rules and merges trusted
   records into `gold_customer_master`.
+- `004_generate_customer_enrichment_metrics.sql`: rolls Silver activity metrics up to
+  `customer_enrichment_metrics`.
+
+## Enrichment Outputs
+
+- `customer_enrichment_metrics`: daily CLV, product adoption, engagement, support
+  health, renewal probability, and supporting metric components by golden customer.
 
 ## Survivorship Rules
 

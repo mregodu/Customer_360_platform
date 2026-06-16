@@ -447,6 +447,138 @@ class SnowflakeGoldenRecordWriter:
         return len(rows)
 
 
+class SnowflakeCustomerEnrichmentWriter:
+    """Persists customer enrichment metrics."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        database_name: str = "CUSTOMER360_DB",
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._database_name = database_name
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def write_customer_enrichment_metrics(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge records into `GOLD.customer_enrichment_metrics`."""
+        return self._merge_records(
+            f"{self._database_name}.GOLD.customer_enrichment_metrics",
+            records,
+            key_columns=("golden_customer_id", "metric_date"),
+        )
+
+    def _merge_records(
+        self,
+        target_table: str,
+        records: Iterable[Mapping[str, object]],
+        *,
+        key_columns: Sequence[str],
+    ) -> int:
+        rows = [dict(record) for record in records]
+        if not rows:
+            return 0
+
+        columns = _ordered_columns(rows)
+        temp_table = f"TEMP_CUSTOMER_ENRICHMENT_MERGE_{uuid4().hex}"
+        create_temp_sql = (
+            f"create temporary table {_quote_identifier(temp_table)} "
+            f"like {_qualified_name(target_table)}"
+        )
+        merge_sql = _merge_sql(target_table, temp_table, columns, key_columns)
+
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(create_temp_sql)
+                cursor.executemany(
+                    _insert_sql(temp_table, columns),
+                    [
+                        tuple(_serialize_snowflake_value(row.get(column)) for column in columns)
+                        for row in rows
+                    ],
+                )
+                cursor.execute(merge_sql)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                cursor.close()
+        return len(rows)
+
+
+class SnowflakeCustomerHealthScoringWriter:
+    """Persists customer health scores and model evaluation metrics."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        database_name: str = "CUSTOMER360_DB",
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._database_name = database_name
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def write_customer_health_scores(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge rows into `ANALYTICS.customer_health_scores`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.customer_health_scores",
+            records,
+            key_columns=("golden_customer_id", "score_date"),
+        )
+
+    def write_model_evaluations(self, records: Iterable[Any]) -> int:
+        """Merge model evaluation rows into `ANALYTICS.customer_health_model_evaluations`."""
+        rows = [
+            record.to_row() if hasattr(record, "to_row") else dict(record)
+            for record in records
+        ]
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.customer_health_model_evaluations",
+            rows,
+            key_columns=("model_version", "algorithm", "trained_at"),
+        )
+
+    def _merge_records(
+        self,
+        target_table: str,
+        records: Iterable[Mapping[str, object]],
+        *,
+        key_columns: Sequence[str],
+    ) -> int:
+        rows = [dict(record) for record in records]
+        if not rows:
+            return 0
+
+        columns = _ordered_columns(rows)
+        temp_table = f"TEMP_CUSTOMER_HEALTH_MERGE_{uuid4().hex}"
+        create_temp_sql = (
+            f"create temporary table {_quote_identifier(temp_table)} "
+            f"like {_qualified_name(target_table)}"
+        )
+        merge_sql = _merge_sql(target_table, temp_table, columns, key_columns)
+
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(create_temp_sql)
+                cursor.executemany(
+                    _insert_sql(temp_table, columns),
+                    [
+                        tuple(_serialize_snowflake_value(row.get(column)) for column in columns)
+                        for row in rows
+                    ],
+                )
+                cursor.execute(merge_sql)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                cursor.close()
+        return len(rows)
+
+
 class SnowflakeSqlScriptRunner:
     """Executes checked-in Snowflake SQL scripts."""
 

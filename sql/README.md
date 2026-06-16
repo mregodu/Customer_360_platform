@@ -31,6 +31,14 @@ After the Splink matching job stages cluster rows, run:
 
 1. `gold/002_merge_gold_customer_clusters.sql`
 2. `gold/003_generate_gold_customer_master.sql`
+3. `gold/004_generate_customer_enrichment_metrics.sql`
+
+After enrichment metrics are available, run Customer Health scoring:
+
+1. `analytics/002_build_customer_health_features.sql`
+2. Python training and prediction pipelines in `src/customer360/classification`
+3. `analytics/003_merge_customer_health_scores.sql`
+4. `analytics/004_merge_customer_health_model_evaluations.sql`
 
 ## Warehouse Design
 

@@ -11,10 +11,13 @@ create table if not exists customer_health_scores (
     email varchar,
     industry varchar,
     lifetime_value number(18, 2),
+    product_usage_score number(10, 4),
+    marketing_engagement_score number(10, 4),
     engagement_score number(10, 4),
     adoption_score number(10, 4),
     renewal_probability number(10, 4),
     support_activity_score number(10, 4),
+    support_health_score number(10, 4),
     satisfaction_score number(10, 4),
     support_ticket_count number(18, 0),
     active_users number(18, 0),
@@ -22,12 +25,74 @@ create table if not exists customer_health_scores (
     health_class varchar not null,
     classification_reason varchar,
     model_version varchar,
+    model_algorithm varchar,
+    class_probabilities variant,
+    feature_snapshot variant,
     scored_at timestamp_ntz not null default current_timestamp(),
     load_batch_id varchar,
     primary key (golden_customer_id, score_date) not enforced
 )
 cluster by (score_date, health_class, golden_customer_id)
 comment = 'Domo-ready customer health, renewal, and churn-risk scores';
+
+alter table if exists customer_health_scores
+    add column if not exists product_usage_score number(10, 4);
+alter table if exists customer_health_scores
+    add column if not exists marketing_engagement_score number(10, 4);
+alter table if exists customer_health_scores
+    add column if not exists support_health_score number(10, 4);
+alter table if exists customer_health_scores
+    add column if not exists model_algorithm varchar;
+alter table if exists customer_health_scores
+    add column if not exists class_probabilities variant;
+alter table if exists customer_health_scores
+    add column if not exists feature_snapshot variant;
+
+create table if not exists customer_health_features (
+    golden_customer_id varchar not null,
+    score_date date not null,
+    company_name varchar,
+    email varchar,
+    industry varchar,
+    lifetime_value number(18, 2),
+    product_usage_score number(10, 4),
+    product_adoption_score number(10, 4),
+    marketing_engagement_score number(10, 4),
+    engagement_score number(10, 4),
+    support_health_score number(10, 4),
+    support_ticket_count number(18, 0),
+    satisfaction_score number(10, 4),
+    response_time_minutes number(18, 4),
+    active_users number(18, 0),
+    active_days number(18, 0),
+    renewal_probability number(10, 4),
+    renewal_status varchar,
+    license_expiration_date date,
+    contract_value number(18, 2),
+    seat_count number(18, 0),
+    derived_health_class varchar,
+    feature_snapshot variant,
+    created_at timestamp_ntz not null default current_timestamp(),
+    load_batch_id varchar,
+    primary key (golden_customer_id, score_date) not enforced
+)
+cluster by (score_date, derived_health_class, golden_customer_id)
+comment = 'Model-ready Customer Health feature table built from Gold enrichment metrics';
+
+create table if not exists customer_health_model_evaluations (
+    model_version varchar not null,
+    algorithm varchar not null,
+    trained_at timestamp_ntz not null,
+    training_rows number(18, 0),
+    validation_rows number(18, 0),
+    accuracy number(10, 6),
+    macro_f1 number(10, 6),
+    metrics variant,
+    load_batch_id varchar,
+    primary key (model_version, algorithm, trained_at) not enforced
+)
+cluster by (to_date(trained_at), algorithm, model_version)
+comment = 'Customer Health model evaluation metrics for Logistic Regression, Random Forest, and XGBoost';
 
 create table if not exists executive_customer_kpis_daily (
     metric_date date not null,
