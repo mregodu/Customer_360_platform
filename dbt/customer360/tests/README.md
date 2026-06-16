@@ -1,9 +1,7 @@
 # tests
 
-Custom dbt data tests that go beyond simple schema assertions.
+Custom dbt data tests that go beyond schema assertions.
 
-## Engineering Notes
-
-- Keep code and assets aligned with this folder's responsibility.
-- Avoid secrets and production customer data.
-- Add or update tests when behavior changes.
+- `assert_gold_customers_have_identity_map`
+- `assert_health_scores_valid_probabilities`
+- `assert_no_active_duplicate_silver_customers`

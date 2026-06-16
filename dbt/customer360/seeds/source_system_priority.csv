@@ -1,0 +1,7 @@
+source_system,source_priority,source_rank_description
+SALESFORCE,10,CRM account data is the preferred identity source
+LICENSING,20,Licensing confirms commercial customer status
+PRODUCT_USAGE,30,Product usage confirms active product engagement
+ZENDESK,40,Support data contributes account health signals
+MARKETO,50,Marketing data contributes lead and engagement signals
+IMPARTNER,60,Partner data is managed separately from customer identity

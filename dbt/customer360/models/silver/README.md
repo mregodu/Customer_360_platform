@@ -1,9 +1,10 @@
 # silver
 
-Silver dbt models that standardize, clean, and validate source records.
+Silver dbt models standardize identity, metric, and partner data for matching, enrichment, and operational monitoring.
 
-## Engineering Notes
+Core outputs:
 
-- Keep code and assets aligned with this folder's responsibility.
-- Avoid secrets and production customer data.
-- Add or update tests when behavior changes.
+- `silver_customer`
+- `silver_customer_metric_daily`
+- `silver_partner_profile`
+- `silver_customer_change_history`

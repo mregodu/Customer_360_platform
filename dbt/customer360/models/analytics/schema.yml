@@ -1,0 +1,116 @@
+version: 2
+
+models:
+  - name: customer_health_features
+    description: Model-ready feature table built from Gold enrichment and master data.
+    columns:
+      - name: golden_customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('gold_customer_master')
+              field: golden_customer_id
+      - name: score_date
+        tests:
+          - not_null
+          - not_future_date
+      - name: derived_health_class
+        tests:
+          - accepted_values:
+              values: ['Healthy', 'At Risk', 'Churn Risk']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['golden_customer_id', 'score_date']
+
+  - name: customer_health_scores
+    description: Domo-ready customer health classifications and risk scores.
+    columns:
+      - name: golden_customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('gold_customer_master')
+              field: golden_customer_id
+      - name: score_date
+        tests:
+          - not_null
+          - not_future_date
+      - name: health_class
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Healthy', 'At Risk', 'Churn Risk']
+      - name: churn_risk_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: renewal_probability
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['golden_customer_id', 'score_date']
+
+  - name: executive_customer_kpis_daily
+    description: Executive daily KPI snapshot for the Customer 360 dashboard.
+    columns:
+      - name: metric_date
+        tests:
+          - not_null
+          - unique
+          - not_future_date
+      - name: data_quality_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+
+  - name: customer_success_account_daily
+    description: Account-level Customer Success dashboard snapshot.
+    columns:
+      - name: golden_customer_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+          - not_future_date
+      - name: health_class
+        tests:
+          - accepted_values:
+              values: ['Healthy', 'At Risk', 'Churn Risk']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['golden_customer_id', 'metric_date']
+
+  - name: partner_performance_daily
+    description: Partner performance dashboard snapshot.
+    columns:
+      - name: partner_id
+        tests: [not_null]
+      - name: metric_date
+        tests:
+          - not_null
+          - not_future_date
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['partner_id', 'metric_date']
+
+  - name: data_quality_dashboard_daily
+    description: Daily aggregate of Great Expectations metrics and alert volume.
+    columns:
+      - name: metric_date
+        tests:
+          - not_null
+          - not_future_date
+      - name: average_quality_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['metric_date', 'schema_name', 'table_name', 'expectation_suite_name']

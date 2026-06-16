@@ -1,9 +1,11 @@
 # gold
 
-Gold dbt models that expose golden customer records and resolved entities.
+Gold dbt models publish Splink outputs, generate identity maps, apply survivorship rules, and calculate enrichment metrics.
 
-## Engineering Notes
+Core outputs:
 
-- Keep code and assets aligned with this folder's responsibility.
-- Avoid secrets and production customer data.
-- Add or update tests when behavior changes.
+- `customer_match_predictions`
+- `gold_customer_clusters`
+- `customer_identity_map`
+- `gold_customer_master`
+- `customer_enrichment_metrics`

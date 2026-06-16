@@ -1,0 +1,43 @@
+version: 2
+
+exposures:
+  - name: domo_executive_customer360_dashboard
+    label: Domo Executive Customer 360 Dashboard
+    type: dashboard
+    maturity: high
+    url: https://domo.example.com/customer360/executive
+    description: Executive view of customer counts, health distribution, lifetime value, matching quality, and data quality.
+    depends_on:
+      - ref('executive_customer_kpis_daily')
+      - ref('customer_health_scores')
+      - ref('data_quality_dashboard_daily')
+    owner:
+      name: Customer 360 Data Engineering
+      email: customer360-data-engineering@example.com
+
+  - name: domo_customer_success_workspace
+    label: Domo Customer Success Workspace
+    type: dashboard
+    maturity: high
+    url: https://domo.example.com/customer360/customer-success
+    description: Account-level customer health, renewal, support, and engagement workspace for Customer Success teams.
+    depends_on:
+      - ref('customer_success_account_daily')
+      - ref('customer_health_scores')
+      - ref('customer_enrichment_metrics')
+    owner:
+      name: Customer Success Operations
+      email: customer-success-ops@example.com
+
+  - name: domo_partner_performance_dashboard
+    label: Domo Partner Performance Dashboard
+    type: dashboard
+    maturity: medium
+    url: https://domo.example.com/customer360/partners
+    description: Partner health, certification, and customer influence metrics.
+    depends_on:
+      - ref('partner_performance_daily')
+      - ref('silver_partner_profile')
+    owner:
+      name: Partner Operations
+      email: partner-operations@example.com

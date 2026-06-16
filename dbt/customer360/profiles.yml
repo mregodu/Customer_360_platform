@@ -3,11 +3,13 @@ customer360:
   outputs:
     dev:
       type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-      user: "{{ env_var('SNOWFLAKE_USER') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
-      database: "{{ env_var('SNOWFLAKE_DATABASE') }}"
-      schema: analytics
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'local-dev') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', 'customer360_dev') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', 'local_password') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'CUSTOMER360_DEV_ROLE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'CUSTOMER360_DEV_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'CUSTOMER360_DB') }}"
+      schema: ANALYTICS
       threads: 4
+      client_session_keep_alive: false
+      query_tag: customer360_dbt

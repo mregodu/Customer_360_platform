@@ -2,8 +2,81 @@ version: 2
 
 sources:
   - name: landing
-    database: CUSTOMER360_DB
+    description: Source-system extracts staged before dbt Bronze normalization.
+    database: "{{ var('customer360_database') }}"
     schema: LANDING
+    loaded_at_field: load_timestamp
+    freshness:
+      warn_after:
+        count: 24
+        period: hour
+      error_after:
+        count: 48
+        period: hour
     tables:
       - name: salesforce_customer
-        description: Raw Salesforce extract staged before bronze ingestion.
+        description: Raw Salesforce account extract staged for Bronze loading.
+        columns:
+          - name: customer_id
+            description: Salesforce account/customer identifier.
+          - name: last_modified_timestamp
+            description: Source CDC timestamp.
+      - name: marketo_lead
+        description: Raw Marketo lead and campaign engagement extract.
+        columns:
+          - name: lead_id
+            description: Marketo lead identifier.
+          - name: last_modified_timestamp
+            description: Source CDC timestamp.
+      - name: zendesk_support
+        description: Raw Zendesk support account and ticket activity extract.
+        columns:
+          - name: support_account_id
+            description: Zendesk support account identifier.
+          - name: last_modified_timestamp
+            description: Source CDC timestamp.
+      - name: product_usage
+        description: Raw product usage metrics from application telemetry.
+        columns:
+          - name: usage_event_id
+            description: Product usage event identifier.
+          - name: event_date
+            description: Product usage metric date.
+      - name: licensing_customer
+        description: Raw licensing, renewal, and contract records.
+        columns:
+          - name: license_id
+            description: Licensing system record identifier.
+          - name: expiration_date
+            description: License expiration date.
+      - name: impartner_partner
+        description: Raw Impartner partner profile and certification records.
+        columns:
+          - name: partner_id
+            description: Impartner partner identifier.
+          - name: last_modified_timestamp
+            description: Source CDC timestamp.
+
+  - name: gold_stage
+    description: Runtime staging tables populated by Python/Splink jobs before dbt Gold publication.
+    database: "{{ var('customer360_database') }}"
+    schema: GOLD
+    tables:
+      - name: stage_gold_customer_clusters
+        description: Splink-generated cluster staging rows consumed by `gold_customer_clusters`.
+      - name: stage_customer_match_predictions
+        description: Optional Splink pairwise prediction staging rows consumed by `customer_match_predictions`.
+
+  - name: analytics_runtime
+    description: Runtime analytics tables populated by Great Expectations, Airflow, and ML jobs.
+    database: "{{ var('customer360_database') }}"
+    schema: ANALYTICS
+    tables:
+      - name: data_quality_metrics
+        description: Expectation-level data-quality metrics.
+      - name: data_quality_alerts
+        description: Data-quality alerts generated from failed or warning expectations.
+      - name: pipeline_execution_log
+        description: Pipeline-level operational audit records.
+      - name: etl_audit_log
+        description: Step-level ETL audit records.
