@@ -1,0 +1,180 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target deployment environment.
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      image_tag:
+        description: Container image tag to deploy. Defaults to the current commit SHA when blank.
+        required: false
+        default: ""
+        type: string
+      run_smoke_test:
+        description: Run the environment smoke test after deployment.
+        required: true
+        default: true
+        type: boolean
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      run_smoke_test:
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+  deployments: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/customer360-platform
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: customer360-deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Resolve deployment image
+        run: |
+          image_tag="${{ inputs.image_tag }}"
+          if [ -z "$image_tag" ]; then
+            image_tag="${GITHUB_SHA}"
+          fi
+          echo "IMAGE_TAG=${image_tag}" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=${IMAGE_NAME}:${image_tag}" >> "$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify deployment image exists
+        run: docker manifest inspect "$IMAGE_URI" > /dev/null
+
+      - name: Create GitHub deployment
+        id: create-deployment
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              auto_merge: false,
+              required_contexts: [],
+              production_environment: process.env.DEPLOY_ENVIRONMENT === "prod",
+              payload: {
+                image: process.env.IMAGE_URI,
+                workflow_run_id: context.runId
+              }
+            });
+            core.setOutput("deployment_id", deployment.data.id);
+
+      - name: Trigger deployment automation
+        env:
+          CUSTOMER360_DEPLOY_WEBHOOK_URL: ${{ secrets.CUSTOMER360_DEPLOY_WEBHOOK_URL }}
+          CUSTOMER360_DEPLOY_WEBHOOK_TOKEN: ${{ secrets.CUSTOMER360_DEPLOY_WEBHOOK_TOKEN }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          if [ -z "$CUSTOMER360_DEPLOY_WEBHOOK_URL" ]; then
+            echo "::notice::CUSTOMER360_DEPLOY_WEBHOOK_URL is not configured; deployment record created without an external rollout."
+            exit 0
+          fi
+
+          python - <<'PY' > payload.json
+          import json
+          import os
+
+          payload = {
+              "environment": os.environ["DEPLOY_ENVIRONMENT"],
+              "image_uri": os.environ["IMAGE_URI"],
+              "image_tag": os.environ["IMAGE_TAG"],
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "sha": os.environ["GITHUB_SHA"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+          }
+          print(json.dumps(payload))
+          PY
+
+          curl -fsSL \
+            --retry 3 \
+            --retry-delay 5 \
+            -X POST "$CUSTOMER360_DEPLOY_WEBHOOK_URL" \
+            -H "Authorization: Bearer ${CUSTOMER360_DEPLOY_WEBHOOK_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data @payload.json
+
+      - name: Run smoke test
+        if: inputs.run_smoke_test
+        env:
+          CUSTOMER360_HEALTHCHECK_URL: ${{ vars.CUSTOMER360_HEALTHCHECK_URL }}
+        run: |
+          if [ -z "$CUSTOMER360_HEALTHCHECK_URL" ]; then
+            echo "::notice::CUSTOMER360_HEALTHCHECK_URL is not configured; skipping smoke test."
+            exit 0
+          fi
+          curl -fsSL --retry 5 --retry-delay 10 "$CUSTOMER360_HEALTHCHECK_URL"
+
+      - name: Mark deployment successful
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.create-deployment.outputs.deployment_id }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+          CUSTOMER360_HEALTHCHECK_URL: ${{ vars.CUSTOMER360_HEALTHCHECK_URL }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: "success",
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              environment_url: process.env.CUSTOMER360_HEALTHCHECK_URL || undefined,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Mark deployment failed
+        if: failure() && steps.create-deployment.outputs.deployment_id != ''
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.create-deployment.outputs.deployment_id }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: "failure",
+              environment: process.env.DEPLOY_ENVIRONMENT,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
