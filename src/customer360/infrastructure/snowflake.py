@@ -579,6 +579,82 @@ class SnowflakeCustomerHealthScoringWriter:
         return len(rows)
 
 
+class SnowflakeDataQualityWriter:
+    """Persists Great Expectations metrics, validation runs, and alerts."""
+
+    def __init__(
+        self,
+        connection_parameters: Mapping[str, str | int],
+        database_name: str = "CUSTOMER360_DB",
+        connection_factory: SnowflakeConnectionFactory | None = None,
+    ) -> None:
+        self._database_name = database_name
+        self._connection_factory = connection_factory or SnowflakeConnectionFactory(connection_parameters)
+
+    def write_quality_metrics(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge expectation-level rows into `ANALYTICS.data_quality_metrics`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.data_quality_metrics",
+            records,
+            key_columns=("metric_id",),
+        )
+
+    def write_quality_validation_runs(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge run-level rows into `ANALYTICS.data_quality_validation_runs`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.data_quality_validation_runs",
+            records,
+            key_columns=("run_id", "expectation_suite_name", "schema_name", "table_name"),
+        )
+
+    def write_quality_alerts(self, records: Iterable[Mapping[str, object]]) -> int:
+        """Merge alert rows into `ANALYTICS.data_quality_alerts`."""
+        return self._merge_records(
+            f"{self._database_name}.ANALYTICS.data_quality_alerts",
+            records,
+            key_columns=("alert_id",),
+        )
+
+    def _merge_records(
+        self,
+        target_table: str,
+        records: Iterable[Mapping[str, object]],
+        *,
+        key_columns: Sequence[str],
+    ) -> int:
+        rows = [dict(record) for record in records]
+        if not rows:
+            return 0
+
+        columns = _ordered_columns(rows)
+        temp_table = f"TEMP_DATA_QUALITY_MERGE_{uuid4().hex}"
+        create_temp_sql = (
+            f"create temporary table {_quote_identifier(temp_table)} "
+            f"like {_qualified_name(target_table)}"
+        )
+        merge_sql = _merge_sql(target_table, temp_table, columns, key_columns)
+
+        with self._connection_factory.connect() as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute(create_temp_sql)
+                cursor.executemany(
+                    _insert_sql(temp_table, columns),
+                    [
+                        tuple(_serialize_snowflake_value(row.get(column)) for column in columns)
+                        for row in rows
+                    ],
+                )
+                cursor.execute(merge_sql)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+            finally:
+                cursor.close()
+        return len(rows)
+
+
 class SnowflakeSqlScriptRunner:
     """Executes checked-in Snowflake SQL scripts."""
 

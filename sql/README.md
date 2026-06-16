@@ -40,6 +40,12 @@ After enrichment metrics are available, run Customer Health scoring:
 3. `analytics/003_merge_customer_health_scores.sql`
 4. `analytics/004_merge_customer_health_model_evaluations.sql`
 
+After each daily pipeline phase, run data-quality validation:
+
+1. Great Expectations checkpoint `great_expectations/checkpoints/customer360_data_quality_checkpoint.yml`
+2. `analytics/005_merge_data_quality_results.sql`
+3. `analytics/006_build_data_quality_dashboard_daily.sql`
+
 ## Warehouse Design
 
 - `WH_CUSTOMER360_INGEST`: source extraction and landing-to-bronze loads.

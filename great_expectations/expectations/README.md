@@ -1,6 +1,9 @@
 # expectations
 
-Expectation suites that define data quality contracts for important tables.
+Expectation suites that define data quality contracts for important Customer 360 tables.
+
+Suites cover five dimensions: completeness, uniqueness, validity, consistency,
+and freshness.
 
 ## Engineering Notes
 

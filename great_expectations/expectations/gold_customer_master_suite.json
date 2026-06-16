@@ -1,0 +1,60 @@
+{
+  "expectation_suite_name": "gold_customer_master_suite",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {"min_value": 1},
+      "meta": {"rule_name": "gold_customer_master_row_count_positive", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "golden_customer_id", "mostly": 1.0},
+      "meta": {"rule_name": "golden_customer_id_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {"column": "cluster_id", "mostly": 1.0},
+      "meta": {"rule_name": "cluster_id_required", "rule_type": "completeness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_unique",
+      "kwargs": {"column": "golden_customer_id", "mostly": 1.0},
+      "meta": {"rule_name": "golden_customer_id_unique", "rule_type": "uniqueness", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_match_regex",
+      "kwargs": {"column": "email", "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", "allow_null": true, "mostly": 0.98},
+      "meta": {"rule_name": "gold_email_valid_format", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "confidence_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "confidence_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {"column": "completeness_score", "min_value": 0, "max_value": 1, "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "gold_completeness_score_between_zero_and_one", "rule_type": "validity", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_in_set",
+      "kwargs": {"column": "is_active", "value_set": ["True", "False", "true", "false", "0", "1"], "allow_null": false, "mostly": 1.0},
+      "meta": {"rule_name": "gold_is_active_boolean", "rule_type": "consistency", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_pair_values_a_to_be_greater_than_or_equal_to_b",
+      "kwargs": {"column_A": "last_seen_at", "column_B": "first_seen_at", "allow_null": true, "mostly": 1.0},
+      "meta": {"rule_name": "last_seen_after_first_seen", "rule_type": "consistency", "severity": "ERROR"}
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_recent",
+      "kwargs": {"column": "updated_at", "max_age_hours": 24, "mostly": 1.0},
+      "meta": {"rule_name": "gold_customer_master_freshness_24h", "rule_type": "freshness", "severity": "ERROR"}
+    }
+  ],
+  "meta": {
+    "notes": "Production quality suite for trusted golden customer records.",
+    "table_name": "CUSTOMER360_DB.GOLD.gold_customer_master",
+    "owner": "customer360-data-engineering"
+  }
+}

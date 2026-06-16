@@ -161,8 +161,11 @@ create table if not exists data_quality_metrics (
     source_system varchar,
     schema_name varchar not null,
     table_name varchar not null,
+    expectation_suite_name varchar,
     rule_name varchar not null,
     rule_type varchar not null,
+    dimension varchar,
+    severity varchar,
     measured_at timestamp_ntz not null default current_timestamp(),
     passed_count number(18, 0),
     failed_count number(18, 0),
@@ -175,6 +178,70 @@ create table if not exists data_quality_metrics (
 )
 cluster by (schema_name, table_name, to_date(measured_at))
 comment = 'Great Expectations and data-quality monitoring results';
+
+alter table if exists data_quality_metrics
+    add column if not exists expectation_suite_name varchar;
+alter table if exists data_quality_metrics
+    add column if not exists dimension varchar;
+alter table if exists data_quality_metrics
+    add column if not exists severity varchar;
+
+create table if not exists data_quality_validation_runs (
+    run_id varchar not null,
+    expectation_suite_name varchar not null,
+    schema_name varchar not null,
+    table_name varchar not null,
+    started_at timestamp_ntz not null,
+    completed_at timestamp_ntz,
+    status varchar not null,
+    row_count number(18, 0),
+    metrics_total number(18, 0),
+    metrics_failed number(18, 0),
+    metrics_warned number(18, 0),
+    quality_score number(10, 4),
+    details variant,
+    primary key (run_id, expectation_suite_name, schema_name, table_name) not enforced
+)
+cluster by (to_date(started_at), status, schema_name, table_name)
+comment = 'Run-level Great Expectations validation summaries';
+
+create table if not exists data_quality_alerts (
+    alert_id varchar not null,
+    run_id varchar not null,
+    schema_name varchar not null,
+    table_name varchar not null,
+    expectation_suite_name varchar not null,
+    rule_name varchar not null,
+    severity varchar not null,
+    status varchar not null,
+    message varchar,
+    created_at timestamp_ntz not null default current_timestamp(),
+    acknowledged_at timestamp_ntz,
+    resolved_at timestamp_ntz,
+    details variant,
+    primary key (alert_id) not enforced
+)
+cluster by (status, severity, to_date(created_at), schema_name, table_name)
+comment = 'Open and historical data-quality alerts generated from failed expectations';
+
+create table if not exists data_quality_dashboard_daily (
+    metric_date date not null,
+    schema_name varchar not null,
+    table_name varchar not null,
+    expectation_suite_name varchar,
+    total_rules number(18, 0),
+    passed_rules number(18, 0),
+    failed_rules number(18, 0),
+    warned_rules number(18, 0),
+    average_quality_score number(10, 4),
+    critical_alert_count number(18, 0),
+    warning_alert_count number(18, 0),
+    freshness_status varchar,
+    refreshed_at timestamp_ntz not null default current_timestamp(),
+    primary key (metric_date, schema_name, table_name, expectation_suite_name) not enforced
+)
+cluster by (metric_date, schema_name, table_name)
+comment = 'Daily dashboard aggregate for data quality monitoring';
 
 create table if not exists pipeline_execution_log (
     pipeline_execution_id varchar not null,

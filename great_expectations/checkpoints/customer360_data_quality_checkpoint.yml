@@ -1,0 +1,48 @@
+name: customer360_data_quality_checkpoint
+config_version: 1.0
+class_name: SimpleCheckpoint
+run_name_template: "%Y%m%d-%H%M%S-customer360-data-quality"
+validations:
+  - batch_request:
+      datasource_name: customer360_snowflake
+      data_connector_name: default_runtime_data_connector_name
+      data_asset_name: CUSTOMER360_DB.SILVER.silver_customer
+      runtime_parameters:
+        query: "select * from CUSTOMER360_DB.SILVER.silver_customer"
+      batch_identifiers:
+        run_id: customer_silver
+    expectation_suite_name: customer_silver_suite
+  - batch_request:
+      datasource_name: customer360_snowflake
+      data_connector_name: default_runtime_data_connector_name
+      data_asset_name: CUSTOMER360_DB.GOLD.gold_customer_master
+      runtime_parameters:
+        query: "select * from CUSTOMER360_DB.GOLD.gold_customer_master"
+      batch_identifiers:
+        run_id: gold_customer_master
+    expectation_suite_name: gold_customer_master_suite
+  - batch_request:
+      datasource_name: customer360_snowflake
+      data_connector_name: default_runtime_data_connector_name
+      data_asset_name: CUSTOMER360_DB.GOLD.customer_enrichment_metrics
+      runtime_parameters:
+        query: "select * from CUSTOMER360_DB.GOLD.customer_enrichment_metrics"
+      batch_identifiers:
+        run_id: customer_enrichment_metrics
+    expectation_suite_name: customer_enrichment_metrics_suite
+  - batch_request:
+      datasource_name: customer360_snowflake
+      data_connector_name: default_runtime_data_connector_name
+      data_asset_name: CUSTOMER360_DB.ANALYTICS.customer_health_scores
+      runtime_parameters:
+        query: "select * from CUSTOMER360_DB.ANALYTICS.customer_health_scores"
+      batch_identifiers:
+        run_id: customer_health_scores
+    expectation_suite_name: customer_health_scores_suite
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
