@@ -28,7 +28,13 @@ HEALTH_FEATURE_COLUMNS = (
     "contract_value_norm",
 )
 
-LABEL_CANDIDATES = ("health_class", "target_health_class", "customer_health_class", "label")
+LABEL_CANDIDATES = (
+    "health_class",
+    "derived_health_class",
+    "target_health_class",
+    "customer_health_class",
+    "label",
+)
 
 
 @dataclass(frozen=True)

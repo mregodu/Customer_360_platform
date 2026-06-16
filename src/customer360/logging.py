@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 try:
     import structlog
 except ModuleNotFoundError:  # pragma: no cover - exercised only in minimal local environments
-    structlog = None  # type: ignore[assignment]
+    structlog = None
 
 
 def configure_logging(config: LoggingConfig | None = None) -> None:

@@ -33,6 +33,9 @@ airflow:
     customer_enrichment_dag:
       schedule: "0 3 * * *"
       enabled: true
+    customer_scoring_dag:
+      schedule: "30 3 * * *"
+      enabled: true
     dashboard_refresh_dag:
       schedule: "0 4 * * *"
       enabled: true
