@@ -67,7 +67,9 @@ INGESTION_SOURCES = (
 DOMO_DATASET_TABLES = {
     "customer_health_scores": "ANALYTICS.customer_health_scores",
     "executive_customer_kpis_daily": "ANALYTICS.executive_customer_kpis_daily",
+    "executive_segment_health_daily": "ANALYTICS.executive_segment_health_daily",
     "customer_success_account_daily": "ANALYTICS.customer_success_account_daily",
+    "customer_health_drilldown": "ANALYTICS.customer_health_drilldown",
     "partner_performance_daily": "ANALYTICS.partner_performance_daily",
     "data_quality_dashboard_daily": "ANALYTICS.data_quality_dashboard_daily",
 }
@@ -719,4 +721,3 @@ def _json_safe(value: object) -> object:
     if isinstance(value, str | int | float | bool) or value is None:
         return value
     return str(value)
-
