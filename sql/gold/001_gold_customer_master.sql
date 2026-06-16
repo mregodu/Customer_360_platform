@@ -146,6 +146,36 @@ create table if not exists gold_customer_enrichment (
 cluster by (metric_date, golden_customer_id)
 comment = 'Customer enrichment metrics generated after golden-record creation';
 
+create table if not exists customer_enrichment_metrics (
+    golden_customer_id varchar not null,
+    metric_date date not null,
+    lifetime_value number(18, 2),
+    product_adoption_score number(10, 4),
+    engagement_score number(10, 4),
+    support_health_score number(10, 4),
+    renewal_probability number(10, 4),
+    product_usage_score number(10, 4),
+    marketing_engagement_score number(10, 4),
+    support_activity_score number(10, 4),
+    support_ticket_count number(18, 0),
+    satisfaction_score number(10, 4),
+    response_time_minutes number(18, 4),
+    active_users number(18, 0),
+    active_days number(18, 0),
+    feature_utilization_score number(10, 4),
+    renewal_status varchar,
+    license_expiration_date date,
+    contract_value number(18, 2),
+    seat_count number(18, 0),
+    metric_components variant,
+    model_version varchar,
+    calculated_at timestamp_ntz not null default current_timestamp(),
+    load_batch_id varchar,
+    primary key (golden_customer_id, metric_date) not enforced
+)
+cluster by (metric_date, golden_customer_id)
+comment = 'Daily customer enrichment metrics for CLV, adoption, engagement, support health, and renewal probability';
+
 -- Optional performance enhancement for entity-resolution workloads:
 -- enable Search Optimization Service on customer_identity_map(source_system, source_customer_id)
 -- and gold_customer_master(email, phone, website_domain) after validating cost and edition support.

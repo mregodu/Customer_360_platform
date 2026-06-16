@@ -31,6 +31,7 @@ After the Splink matching job stages cluster rows, run:
 
 1. `gold/002_merge_gold_customer_clusters.sql`
 2. `gold/003_generate_gold_customer_master.sql`
+3. `gold/004_generate_customer_enrichment_metrics.sql`
 
 ## Warehouse Design
 
