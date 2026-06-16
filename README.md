@@ -10,7 +10,8 @@ Enterprise-grade starter repository for a Customer 360 platform that consolidate
 - Generates golden customer records in the gold layer.
 - Enriches customer profiles with lifetime value, product adoption, engagement,
   support health, and renewal probability metrics.
-- Classifies customers as `Healthy`, `At Risk`, or `Churn Risk`.
+- Classifies customers as `Healthy`, `At Risk`, or `Churn Risk` using Logistic
+  Regression, Random Forest, or XGBoost scoring pipelines.
 - Validates quality with Great Expectations.
 - Orchestrates pipelines with Airflow.
 - Serves analytics tables and Domo dashboard extracts.

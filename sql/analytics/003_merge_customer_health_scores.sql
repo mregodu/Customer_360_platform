@@ -1,0 +1,116 @@
+-- Merges Python/ML-generated health predictions into ANALYTICS.customer_health_scores.
+-- Expected staging table: CUSTOMER360_DB.ANALYTICS.stage_customer_health_scores
+
+use role SYSADMIN;
+use database CUSTOMER360_DB;
+use schema ANALYTICS;
+
+create table if not exists stage_customer_health_scores (
+    golden_customer_id varchar not null,
+    score_date date not null,
+    company_name varchar,
+    email varchar,
+    industry varchar,
+    lifetime_value number(18, 2),
+    product_usage_score number(10, 4),
+    marketing_engagement_score number(10, 4),
+    engagement_score number(10, 4),
+    adoption_score number(10, 4),
+    renewal_probability number(10, 4),
+    support_activity_score number(10, 4),
+    support_health_score number(10, 4),
+    satisfaction_score number(10, 4),
+    support_ticket_count number(18, 0),
+    active_users number(18, 0),
+    churn_risk_score number(10, 4),
+    health_class varchar not null,
+    classification_reason varchar,
+    model_version varchar,
+    model_algorithm varchar,
+    class_probabilities variant,
+    feature_snapshot variant,
+    scored_at timestamp_ntz,
+    load_batch_id varchar
+);
+
+merge into CUSTOMER360_DB.ANALYTICS.customer_health_scores target
+using CUSTOMER360_DB.ANALYTICS.stage_customer_health_scores source
+on target.golden_customer_id = source.golden_customer_id
+   and target.score_date = source.score_date
+when matched then update set
+    company_name = source.company_name,
+    email = source.email,
+    industry = source.industry,
+    lifetime_value = source.lifetime_value,
+    product_usage_score = source.product_usage_score,
+    marketing_engagement_score = source.marketing_engagement_score,
+    engagement_score = source.engagement_score,
+    adoption_score = source.adoption_score,
+    renewal_probability = source.renewal_probability,
+    support_activity_score = source.support_activity_score,
+    support_health_score = source.support_health_score,
+    satisfaction_score = source.satisfaction_score,
+    support_ticket_count = source.support_ticket_count,
+    active_users = source.active_users,
+    churn_risk_score = source.churn_risk_score,
+    health_class = source.health_class,
+    classification_reason = source.classification_reason,
+    model_version = source.model_version,
+    model_algorithm = source.model_algorithm,
+    class_probabilities = source.class_probabilities,
+    feature_snapshot = source.feature_snapshot,
+    scored_at = coalesce(source.scored_at, current_timestamp()),
+    load_batch_id = source.load_batch_id
+when not matched then insert (
+    golden_customer_id,
+    score_date,
+    company_name,
+    email,
+    industry,
+    lifetime_value,
+    product_usage_score,
+    marketing_engagement_score,
+    engagement_score,
+    adoption_score,
+    renewal_probability,
+    support_activity_score,
+    support_health_score,
+    satisfaction_score,
+    support_ticket_count,
+    active_users,
+    churn_risk_score,
+    health_class,
+    classification_reason,
+    model_version,
+    model_algorithm,
+    class_probabilities,
+    feature_snapshot,
+    scored_at,
+    load_batch_id
+) values (
+    source.golden_customer_id,
+    source.score_date,
+    source.company_name,
+    source.email,
+    source.industry,
+    source.lifetime_value,
+    source.product_usage_score,
+    source.marketing_engagement_score,
+    source.engagement_score,
+    source.adoption_score,
+    source.renewal_probability,
+    source.support_activity_score,
+    source.support_health_score,
+    source.satisfaction_score,
+    source.support_ticket_count,
+    source.active_users,
+    source.churn_risk_score,
+    source.health_class,
+    source.classification_reason,
+    source.model_version,
+    source.model_algorithm,
+    source.class_probabilities,
+    source.feature_snapshot,
+    coalesce(source.scored_at, current_timestamp()),
+    source.load_batch_id
+);

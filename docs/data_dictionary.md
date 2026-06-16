@@ -24,3 +24,14 @@ Customer enrichment metrics:
 | `support_health_score` | Support experience score where higher means fewer unresolved support concerns. |
 | `renewal_probability` | Estimated likelihood of renewal from status, engagement, adoption, support health, and expiration timing. |
 | `metric_components` | Variant payload with source-system and formula-version audit metadata. |
+
+Customer health scoring:
+
+| Column | Description |
+| --- | --- |
+| `score_date` | Daily date for the health score. |
+| `health_class` | Predicted class: `Healthy`, `At Risk`, or `Churn Risk`. |
+| `churn_risk_score` | Probability assigned to the `Churn Risk` class. |
+| `model_algorithm` | Algorithm used for prediction, such as Logistic Regression, Random Forest, or XGBoost. |
+| `class_probabilities` | Variant payload with per-class prediction probabilities. |
+| `feature_snapshot` | Variant payload with model feature values used at scoring time. |
