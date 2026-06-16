@@ -2,6 +2,13 @@
 
 Architecture, onboarding, data dictionary, runbooks, and design decision records.
 
+## Documents
+
+- `architecture.md`: platform architecture and dependency direction.
+- `cicd.md`: GitHub Actions CI, Docker build, and deployment automation guide.
+- `data_dictionary.md`: customer, enrichment, health, and reporting data definitions.
+- `onboarding.md`: first steps for local development.
+
 ## Why This Folder Exists
 
 - Makes ownership clear as the Customer 360 platform grows.

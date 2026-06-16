@@ -7,7 +7,7 @@ Keeping domain objects dependency-free makes them easy to test and reuse.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 
 
@@ -30,7 +30,7 @@ class SourceCustomerRecord:
     phone: str | None = None
     address: str | None = None
     website_domain: str | None = None
-    last_modified_timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_modified_timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True)
