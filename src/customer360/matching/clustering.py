@@ -95,6 +95,13 @@ class CustomerClusterGenerator:
                     "cluster_id": cluster_id,
                     "golden_customer_id": _stable_id("gold", members),
                     "cluster_size": len(members),
+                    "source_members": [
+                        {
+                            "source_system": member[0],
+                            "source_customer_id": member[1],
+                        }
+                        for member in sorted(members)
+                    ],
                     "source_customer_ids": [member[1] for member in sorted(members)],
                     "source_systems": sorted({member[0] for member in members}),
                     "representative_source_system": representative[0],

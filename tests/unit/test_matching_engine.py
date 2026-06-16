@@ -68,12 +68,18 @@ def test_engine_generates_gold_customer_clusters() -> None:
     assert len(clusters) == 2
     matched_cluster = next(cluster for cluster in clusters if cluster["cluster_size"] == 2)
     source_customer_ids = matched_cluster["source_customer_ids"]
+    source_members = matched_cluster["source_members"]
     confidence_score = matched_cluster["confidence_score"]
     golden_customer_id = matched_cluster["golden_customer_id"]
     assert isinstance(source_customer_ids, list)
+    assert isinstance(source_members, list)
     assert isinstance(confidence_score, float)
     assert isinstance(golden_customer_id, str)
     assert set(source_customer_ids) == {"001", "m-1"}
+    assert {
+        (member["source_system"], member["source_customer_id"])
+        for member in source_members
+    } == {("SALESFORCE", "001"), ("MARKETO", "m-1")}
     assert confidence_score >= 0.95
     assert matched_cluster["load_batch_id"] == "batch-1"
     assert golden_customer_id.startswith("gold_")

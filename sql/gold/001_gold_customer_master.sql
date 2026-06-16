@@ -44,6 +44,7 @@ create table if not exists gold_customer_clusters (
     cluster_id varchar not null,
     golden_customer_id varchar not null,
     cluster_size number(18, 0) not null,
+    source_members variant,
     source_customer_ids array,
     source_systems array,
     representative_source_system varchar,
@@ -103,6 +104,7 @@ create table if not exists gold_customer_master (
     confidence_score number(10, 8),
     completeness_score number(5, 4),
     data_quality_score number(5, 4),
+    survivorship_rules variant,
     golden_record_version varchar not null default 'v1',
     is_active boolean not null default true,
     created_at timestamp_ntz not null default current_timestamp(),
@@ -112,6 +114,12 @@ create table if not exists gold_customer_master (
 )
 cluster by (golden_customer_id, company_name)
 comment = 'Trusted golden customer records after entity resolution and survivorship';
+
+alter table if exists gold_customer_clusters
+    add column if not exists source_members variant;
+
+alter table if exists gold_customer_master
+    add column if not exists survivorship_rules variant;
 
 create table if not exists gold_customer_enrichment (
     golden_customer_id varchar not null,

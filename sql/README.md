@@ -30,6 +30,7 @@ After bronze ingestion completes, run these Silver transformation scripts with
 After the Splink matching job stages cluster rows, run:
 
 1. `gold/002_merge_gold_customer_clusters.sql`
+2. `gold/003_generate_gold_customer_master.sql`
 
 ## Warehouse Design
 

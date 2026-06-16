@@ -41,7 +41,7 @@ The Python package follows a dependency direction that keeps business logic port
 - `application`: use cases and orchestration services that coordinate domain behavior.
 - `infrastructure`: Snowflake, Domo, filesystem, and external service adapters.
 - `interfaces`: CLIs and entrypoints used by humans, Airflow, and automation.
-- business modules (`ingestion`, `cleansing`, `matching`, `enrichment`, `classification`, `monitoring`) expose production use cases while delegating vendor-specific work to infrastructure adapters.
+- business modules (`ingestion`, `cleansing`, `matching`, `golden`, `enrichment`, `classification`, `monitoring`) expose production use cases while delegating vendor-specific work to infrastructure adapters.
 
 ## Quick Start
 
