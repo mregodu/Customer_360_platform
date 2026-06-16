@@ -17,6 +17,16 @@ Run the scripts with the role noted in each file:
 9. `security/002_grant_privileges.sql`
 10. `security/003_masking_policies.sql`
 
+## Recurring Transformation Scripts
+
+After bronze ingestion completes, run these Silver transformation scripts with
+`WH_CUSTOMER360_TRANSFORM`:
+
+1. `silver/002_merge_silver_customer.sql`
+2. `silver/003_merge_silver_customer_metric_daily.sql`
+3. `silver/004_merge_silver_partner_profile.sql`
+4. `silver/005_insert_silver_data_quality_metrics.sql`
+
 ## Warehouse Design
 
 - `WH_CUSTOMER360_INGEST`: source extraction and landing-to-bronze loads.
