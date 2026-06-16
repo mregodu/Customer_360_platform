@@ -1,9 +1,12 @@
 # bronze
 
-Bronze dbt models that preserve raw source shape and add audit metadata.
+Bronze dbt models preserve source shape and add Customer 360 audit metadata, source identifiers, load batch IDs, load timestamps, and record hashes.
 
-## Engineering Notes
+Included sources:
 
-- Keep code and assets aligned with this folder's responsibility.
-- Avoid secrets and production customer data.
-- Add or update tests when behavior changes.
+- Salesforce
+- Marketo
+- Zendesk
+- Product Usage
+- Licensing
+- Impartner

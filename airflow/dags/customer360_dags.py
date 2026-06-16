@@ -292,6 +292,16 @@ with DAG(**_dag_kwargs("dashboard_refresh_dag", schedule_fallback="0 4 * * *")) 
         },
         execution_timeout=timedelta(hours=1),
     )
+    build_domo_reporting_layer = _python_task(
+        task_id="build_domo_reporting_layer",
+        python_callable=run_sql_script,
+        op_kwargs={
+            "script_path": "sql/analytics/008_build_domo_reporting_layer.sql",
+            "pipeline_name": "dashboard_refresh",
+            "step_name": "merge_domo_reporting_layer",
+        },
+        execution_timeout=timedelta(hours=1),
+    )
 
     with TaskGroup(group_id="publish_domo_datasets") as publish_domo_datasets:
         for dataset_name, table_name in DOMO_DATASET_TABLES.items():
@@ -305,4 +315,4 @@ with DAG(**_dag_kwargs("dashboard_refresh_dag", schedule_fallback="0 4 * * *")) 
 
     dashboard_refresh_complete = EmptyOperator(task_id="dashboard_refresh_complete")
 
-    wait_for_scoring >> build_quality_dashboard >> publish_domo_datasets >> dashboard_refresh_complete
+    wait_for_scoring >> build_quality_dashboard >> build_domo_reporting_layer >> publish_domo_datasets >> dashboard_refresh_complete

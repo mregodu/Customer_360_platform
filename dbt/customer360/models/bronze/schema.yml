@@ -2,9 +2,97 @@ version: 2
 
 models:
   - name: salesforce_customer_bronze
-    description: Raw Salesforce customer records loaded exactly as received with audit columns.
+    description: Raw Salesforce account records with Customer 360 audit metadata.
     columns:
-      - name: customer_id
+      - name: source_record_id
+        description: Stable raw record identifier.
+        tests: [not_null]
+      - name: load_batch_id
+        description: Ingestion or dbt invocation batch identifier.
         tests: [not_null]
       - name: source_system
+        description: Source system code.
+        tests:
+          - accepted_values:
+              values: ['SALESFORCE']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_record_id', 'load_batch_id']
+
+  - name: marketo_lead_bronze
+    description: Raw Marketo lead and engagement records with audit metadata.
+    columns:
+      - name: source_record_id
         tests: [not_null]
+      - name: load_batch_id
+        tests: [not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['MARKETO']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_record_id', 'load_batch_id']
+
+  - name: zendesk_support_bronze
+    description: Raw Zendesk support account and ticket activity records.
+    columns:
+      - name: source_record_id
+        tests: [not_null]
+      - name: load_batch_id
+        tests: [not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['ZENDESK']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_record_id', 'load_batch_id']
+
+  - name: product_usage_bronze
+    description: Raw product usage metrics from application telemetry.
+    columns:
+      - name: source_record_id
+        tests: [not_null]
+      - name: load_batch_id
+        tests: [not_null]
+      - name: event_date
+        tests:
+          - not_future_date
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['PRODUCT_USAGE']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_record_id', 'load_batch_id']
+
+  - name: licensing_customer_bronze
+    description: Raw licensing, renewal, and contract records.
+    columns:
+      - name: source_record_id
+        tests: [not_null]
+      - name: load_batch_id
+        tests: [not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['LICENSING']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_record_id', 'load_batch_id']
+
+  - name: impartner_partner_bronze
+    description: Raw Impartner partner profile and certification records.
+    columns:
+      - name: source_record_id
+        tests: [not_null]
+      - name: load_batch_id
+        tests: [not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['IMPARTNER']
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_record_id', 'load_batch_id']

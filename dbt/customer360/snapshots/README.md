@@ -1,9 +1,6 @@
 # snapshots
 
-dbt snapshots for slowly changing dimensions and historical tracking.
+dbt snapshots track slowly changing Customer 360 records.
 
-## Engineering Notes
-
-- Keep code and assets aligned with this folder's responsibility.
-- Avoid secrets and production customer data.
-- Add or update tests when behavior changes.
+- `silver_customer_snapshot`: standardized source-customer changes.
+- `gold_customer_master_snapshot`: trusted golden customer profile changes.

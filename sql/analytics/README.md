@@ -3,7 +3,8 @@
 Snowflake DDL for reporting-ready tables consumed by Domo.
 
 Analytics tables are dashboard-ready daily snapshots, customer health scores, partner performance,
-data-quality metrics, pipeline execution logs, ETL lineage, and Domo refresh logs.
+Customer Success drilldowns, executive segment rollups, data-quality metrics, pipeline execution logs,
+ETL lineage, and Domo refresh logs.
 
 ## Customer Health Scoring
 
@@ -31,6 +32,16 @@ data-quality metrics, pipeline execution logs, ETL lineage, and Domo refresh log
   checksum, status, and structured details.
 - `007_merge_enterprise_audit_logs.sql`: merges staged audit records into both
   enterprise audit tables.
+
+## Domo Reporting Layer
+
+- `executive_customer_kpis_daily`: executive daily KPI snapshot.
+- `executive_segment_health_daily`: segment-level health, renewal, and value drilldown.
+- `customer_success_account_daily`: Customer Success account daily snapshot.
+- `customer_health_drilldown`: account-level health, renewal, support, and source-system detail.
+- `partner_performance_daily`: partner tier, region, certification, and customer-health snapshot.
+- `008_build_domo_reporting_layer.sql`: refreshes the Executive, Customer Success,
+  Partner, segment, and customer drilldown datasets consumed by Domo.
 
 ## Engineering Notes
 

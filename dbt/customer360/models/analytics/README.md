@@ -1,9 +1,12 @@
 # analytics
 
-Analytics dbt models optimized for dashboard and stakeholder consumption.
+Analytics dbt models are Domo-ready marts for customer health, executive reporting, Customer Success workflows, partner performance, and data-quality operations.
 
-## Engineering Notes
+Core outputs:
 
-- Keep code and assets aligned with this folder's responsibility.
-- Avoid secrets and production customer data.
-- Add or update tests when behavior changes.
+- `customer_health_features`
+- `customer_health_scores`
+- `executive_customer_kpis_daily`
+- `customer_success_account_daily`
+- `partner_performance_daily`
+- `data_quality_dashboard_daily`

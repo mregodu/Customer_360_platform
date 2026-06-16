@@ -1,0 +1,18 @@
+version: 2
+
+seeds:
+  - name: source_system_priority
+    description: Source-system priority used by survivorship and standardization rules.
+    columns:
+      - name: source_system
+        description: Uppercase source-system code.
+        tests:
+          - not_null
+          - unique
+      - name: source_priority
+        description: Lower values win during source-priority survivorship.
+        tests:
+          - not_null
+          - accepted_range:
+              min_value: 1
+              max_value: 100

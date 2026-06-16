@@ -1,0 +1,20 @@
+version: 2
+
+snapshots:
+  - name: silver_customer_snapshot
+    description: Slowly changing history for standardized Silver customer identity records.
+    columns:
+      - name: source_system
+        tests: [not_null]
+      - name: source_customer_id
+        tests: [not_null]
+      - name: dbt_valid_from
+        tests: [not_null]
+
+  - name: gold_customer_master_snapshot
+    description: Slowly changing history for trusted Golden Customer master records.
+    columns:
+      - name: golden_customer_id
+        tests: [not_null]
+      - name: dbt_valid_from
+        tests: [not_null]

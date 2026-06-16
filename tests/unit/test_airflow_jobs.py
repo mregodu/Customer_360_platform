@@ -21,7 +21,9 @@ def test_airflow_jobs_cover_required_sources_and_domo_outputs() -> None:
     assert {
         "customer_health_scores",
         "executive_customer_kpis_daily",
+        "executive_segment_health_daily",
         "customer_success_account_daily",
+        "customer_health_drilldown",
         "partner_performance_daily",
         "data_quality_dashboard_daily",
     } <= set(DOMO_DATASET_TABLES)

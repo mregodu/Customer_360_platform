@@ -12,17 +12,47 @@ snapshot-paths: ["snapshots"]
 target-path: target
 clean-targets: ["target", "dbt_packages"]
 
+vars:
+  customer360_database: "{{ env_var('SNOWFLAKE_DATABASE', 'CUSTOMER360_DB') }}"
+  customer360_metric_lookback_days: 90
+  customer360_feature_lookback_days: 180
+  customer360_model_version: customer360_dbt_v1
+
 models:
   customer360:
+    +database: "{{ var('customer360_database') }}"
+    +persist_docs:
+      relation: true
+      columns: true
     bronze:
-      +schema: bronze
-      +materialized: table
-    silver:
-      +schema: silver
+      +schema: BRONZE
       +materialized: incremental
+      +incremental_strategy: merge
+      +on_schema_change: sync_all_columns
+      +tags: ["bronze", "raw", "customer360"]
+    silver:
+      +schema: SILVER
+      +materialized: incremental
+      +incremental_strategy: merge
+      +on_schema_change: sync_all_columns
+      +tags: ["silver", "standardized", "customer360"]
     gold:
-      +schema: gold
+      +schema: GOLD
       +materialized: table
+      +tags: ["gold", "master-data", "customer360"]
     analytics:
-      +schema: analytics
+      +schema: ANALYTICS
       +materialized: table
+      +tags: ["analytics", "domo", "customer360"]
+
+seeds:
+  customer360:
+    +database: "{{ var('customer360_database') }}"
+    +schema: REFERENCE
+    +quote_columns: false
+
+snapshots:
+  customer360:
+    +target_database: "{{ var('customer360_database') }}"
+    +target_schema: SNAPSHOTS
+    +tags: ["snapshots", "lineage", "customer360"]

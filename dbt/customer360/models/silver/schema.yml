@@ -1,0 +1,98 @@
+version: 2
+
+models:
+  - name: silver_customer
+    description: Standardized customer identity records used by matching, survivorship, and enrichment.
+    columns:
+      - name: source_system
+        description: Source system that supplied the customer record.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['SALESFORCE', 'MARKETO', 'ZENDESK', 'PRODUCT_USAGE', 'LICENSING']
+      - name: source_customer_id
+        description: Customer identifier within the source system.
+        tests: [not_null]
+      - name: email
+        description: Lowercase standardized email address when available.
+      - name: data_quality_score
+        description: Row-level quality score after standardization rules.
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: completeness_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_system', 'source_customer_id']
+
+  - name: silver_customer_metric_daily
+    description: Daily conformed product, marketing, support, and renewal signals by source customer.
+    columns:
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['MARKETO', 'ZENDESK', 'PRODUCT_USAGE', 'LICENSING']
+      - name: source_customer_id
+        tests: [not_null]
+      - name: metric_date
+        tests:
+          - not_null
+          - not_future_date
+      - name: product_usage_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: marketing_engagement_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: support_activity_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_system', 'source_customer_id', 'metric_date']
+
+  - name: silver_partner_profile
+    description: Standardized partner profile records for partner analytics and dashboarding.
+    columns:
+      - name: source_system
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['IMPARTNER']
+      - name: partner_id
+        tests: [not_null]
+      - name: data_quality_score
+        tests:
+          - accepted_range:
+              min_value: 0
+              max_value: 1
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns: ['source_system', 'partner_id']
+
+  - name: silver_customer_change_history
+    description: dbt snapshot-derived history of standardized customer changes.
+    columns:
+      - name: change_id
+        tests:
+          - not_null
+          - unique
+      - name: source_system
+        tests: [not_null]
+      - name: source_customer_id
+        tests: [not_null]
+      - name: is_current
+        tests:
+          - not_null

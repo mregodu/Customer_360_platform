@@ -155,6 +155,63 @@ create table if not exists partner_performance_daily (
 cluster by (metric_date, partner_region, partner_tier)
 comment = 'Partner dashboard daily performance and certification snapshot';
 
+create table if not exists customer_health_drilldown (
+    golden_customer_id varchar not null,
+    metric_date date not null,
+    cluster_id varchar,
+    company_name varchar,
+    email varchar,
+    phone varchar,
+    website_domain varchar,
+    industry varchar,
+    customer_status varchar,
+    health_class varchar,
+    classification_reason varchar,
+    churn_risk_score number(10, 4),
+    lifetime_value number(18, 2),
+    product_usage_score number(10, 4),
+    marketing_engagement_score number(10, 4),
+    engagement_score number(10, 4),
+    adoption_score number(10, 4),
+    support_health_score number(10, 4),
+    renewal_probability number(10, 4),
+    support_ticket_count number(18, 0),
+    satisfaction_score number(10, 4),
+    active_users number(18, 0),
+    license_expiration_date date,
+    renewal_status varchar,
+    owner_team varchar,
+    primary_source_system varchar,
+    source_systems varchar,
+    source_customer_count number(18, 0),
+    data_quality_score number(10, 4),
+    refreshed_at timestamp_ntz not null default current_timestamp(),
+    primary key (golden_customer_id, metric_date) not enforced
+)
+cluster by (metric_date, health_class, golden_customer_id)
+comment = 'Account-level Domo drilldown dataset for health drivers, renewal signals, and master-data context';
+
+create table if not exists executive_segment_health_daily (
+    metric_date date not null,
+    segment_type varchar not null,
+    segment_value varchar not null,
+    customer_count number(18, 0),
+    healthy_customers number(18, 0),
+    at_risk_customers number(18, 0),
+    churn_risk_customers number(18, 0),
+    avg_churn_risk_score number(10, 4),
+    avg_renewal_probability number(10, 4),
+    avg_engagement_score number(10, 4),
+    avg_adoption_score number(10, 4),
+    avg_support_health_score number(10, 4),
+    total_lifetime_value number(18, 2),
+    avg_lifetime_value number(18, 2),
+    refreshed_at timestamp_ntz not null default current_timestamp(),
+    primary key (metric_date, segment_type, segment_value) not enforced
+)
+cluster by (metric_date, segment_type, segment_value)
+comment = 'Executive Domo drilldown dataset for segment-level customer health, renewal, and value analysis';
+
 create table if not exists data_quality_metrics (
     metric_id varchar not null,
     run_id varchar not null,

@@ -50,6 +50,10 @@ Pipeline and ETL audit events can be staged and merged with:
 
 1. `analytics/007_merge_enterprise_audit_logs.sql`
 
+Before Domo refreshes publish datasets, build the reporting layer with:
+
+1. `analytics/008_build_domo_reporting_layer.sql`
+
 ## Warehouse Design
 
 - `WH_CUSTOMER360_INGEST`: source extraction and landing-to-bronze loads.

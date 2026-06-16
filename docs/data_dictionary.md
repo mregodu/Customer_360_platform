@@ -35,3 +35,13 @@ Customer health scoring:
 | `model_algorithm` | Algorithm used for prediction, such as Logistic Regression, Random Forest, or XGBoost. |
 | `class_probabilities` | Variant payload with per-class prediction probabilities. |
 | `feature_snapshot` | Variant payload with model feature values used at scoring time. |
+
+Domo reporting layer:
+
+| Dataset | Grain | Description |
+| --- | --- | --- |
+| `executive_customer_kpis_daily` | One row per `metric_date` | Executive totals for customers, value, engagement, renewal, matching, and data quality. |
+| `executive_segment_health_daily` | One row per `metric_date`, `segment_type`, `segment_value` | Segment health, renewal, and lifetime value rollups for executive drilldowns. |
+| `customer_success_account_daily` | One row per `golden_customer_id`, `metric_date` | Customer Success daily account worklist with health, adoption, support, and renewal fields. |
+| `customer_health_drilldown` | One row per `golden_customer_id`, `metric_date` | Account-level drilldown with health drivers, source-system coverage, and master-data context. |
+| `partner_performance_daily` | One row per `partner_id`, `metric_date` | Partner tier, region, certification, and customer-health summary for partner operations. |
