@@ -32,6 +32,7 @@ For a quick image-level validation:
 
 ```bash
 docker compose --profile tools run --rm customer360-cli customer360 healthcheck
+docker compose --profile tools run --rm customer360-cli customer360 readiness --environment dev
 ```
 
 ## Snowflake Connectivity
@@ -86,5 +87,7 @@ metadata database and logs.
   after Snowflake schemas and Domo datasets are ready.
 - Scale workers with `docker compose up -d --scale airflow-worker=3 airflow-worker`
   when ingestion, matching, or scoring workloads need more execution capacity.
+- Run `customer360 readiness --environment prod --strict` in the container before
+  enabling production DAG schedules.
 - For larger deployments, use the same image in Kubernetes, ECS, or managed Airflow
   and map the environment variables documented above through the platform secret store.

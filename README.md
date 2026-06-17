@@ -54,6 +54,7 @@ pip install --upgrade pip
 pip install -e .
 cp .env.example .env
 customer360 healthcheck
+customer360 readiness --environment dev
 pytest
 ```
 
@@ -78,6 +79,12 @@ Default local config:
 
 ```bash
 export CUSTOMER360_CONFIG_PATH=configs/dev.yaml
+```
+
+Before production deployment, run:
+
+```bash
+customer360 readiness --environment prod --strict
 ```
 
 ## Pipeline Layers

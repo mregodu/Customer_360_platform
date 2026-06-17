@@ -159,6 +159,9 @@ jobs:
       - name: Run platform healthcheck
         run: python -m customer360.interfaces.cli.main healthcheck
 
+      - name: Run platform readiness checks
+        run: python -m customer360.interfaces.cli.main readiness --environment test
+
       - name: Parse dbt project
         run: dbt parse --project-dir dbt/customer360 --profiles-dir dbt/customer360 --target dev
 

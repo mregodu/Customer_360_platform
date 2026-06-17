@@ -12,3 +12,14 @@ The platform uses layered data engineering architecture:
 8. Analytics exposes curated reporting tables for Domo.
 
 Python code follows clean architecture. Domain rules do not import Snowflake, Airflow, Domo, Splink, or Great Expectations directly.
+
+For the complete production deployment view, see `final_architecture.md`.
+
+Production deployments must pass:
+
+```bash
+customer360 readiness --environment prod --strict
+```
+
+The readiness gate validates scalability, security, performance, maintainability,
+and observability controls before production DAGs are enabled.
