@@ -37,6 +37,23 @@ ignore_missing_imports = true
 mypy_path = "src"
 
 [tool.pytest.ini_options]
-addopts = "--cov=customer360 --cov-report=term-missing"
+addopts = "--cov=customer360 --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: integration tests that exercise adapters or cross-module contracts",
+    "snowflake: Snowflake adapter contract tests that run without live Snowflake credentials",
+    "unit: fast unit tests for domain and application behavior",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/customer360"]
+omit = [
+    "src/customer360/interfaces/airflow/jobs.py",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true

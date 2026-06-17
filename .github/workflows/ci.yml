@@ -96,8 +96,8 @@ jobs:
           print(f"validated {len(yaml_paths)} YAML files")
           PY
 
-  unit-tests:
-    name: Unit Tests
+  pytest-coverage:
+    name: Pytest Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: code-quality
@@ -117,16 +117,17 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
-      - name: Run unit tests
-        run: python -m pytest tests/unit
+      - name: Run unit and integration tests with coverage gate
+        run: python -m pytest tests/unit tests/integration
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: unit-test-coverage
+          name: pytest-coverage
           path: |
             .coverage
+            coverage.xml
             htmlcov
           if-no-files-found: ignore
 
@@ -185,7 +186,7 @@ jobs:
       - name: Run integration tests when present
         run: |
           if compgen -G "tests/integration/test_*.py" > /dev/null; then
-            python -m pytest tests/integration
+            python -m pytest -o addopts='' tests/integration
           else
             echo "No integration test modules found; repository-level integration checks passed."
           fi
