@@ -1,0 +1,197 @@
+x-customer360-airflow-common: &customer360-airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      AIRFLOW_UID: ${AIRFLOW_UID:-50000}
+  image: customer360-platform:${CUSTOMER360_IMAGE_TAG:-local}
+  user: "${AIRFLOW_UID:-50000}:0"
+  volumes:
+    - airflow-logs:/opt/airflow/logs
+    - ./data/raw:/app/data/raw
+    - ./data/processed:/app/data/processed
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+    airflow-redis:
+      condition: service_healthy
+  restart: unless-stopped
+  networks:
+    - customer360
+  environment: &customer360-airflow-env
+    AIRFLOW_HOME: /opt/airflow
+    AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
+    AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@airflow-postgres:5432/${POSTGRES_DB:-airflow}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__DAGS_FOLDER: /app/airflow/dags
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-x5Gj92yendFUZ_1ylXhbamH1H1wiqNfVyU66U0edp_s=}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__PLUGINS_FOLDER: /app/airflow/plugins
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@airflow-postgres:5432/${POSTGRES_DB:-airflow}
+    AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+    AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
+    AIRFLOW_ADMIN_FIRSTNAME: ${AIRFLOW_ADMIN_FIRSTNAME:-Customer}
+    AIRFLOW_ADMIN_LASTNAME: ${AIRFLOW_ADMIN_LASTNAME:-Admin}
+    AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+    AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
+    CUSTOMER360_CONFIG_PATH: /app/configs/${CUSTOMER360_ENV:-dev}.yaml
+    CUSTOMER360_DOMO_DRY_RUN: ${CUSTOMER360_DOMO_DRY_RUN:-true}
+    CUSTOMER360_ENV: ${CUSTOMER360_ENV:-dev}
+    DOMO_ACCESS_TOKEN: ${DOMO_ACCESS_TOKEN:-}
+    DOMO_API_HOST: ${DOMO_API_HOST:-https://api.domo.com}
+    DOMO_CLIENT_ID: ${DOMO_CLIENT_ID:-dev_domo_client_id}
+    DOMO_CLIENT_SECRET: ${DOMO_CLIENT_SECRET:-dev_domo_client_secret}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_CUSTOMER_HEALTH_DRILLDOWN: ${DOMO_DATASET_ID_CUSTOMER360_DEV_CUSTOMER_HEALTH_DRILLDOWN:-}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_CUSTOMER_HEALTH_SCORES: ${DOMO_DATASET_ID_CUSTOMER360_DEV_CUSTOMER_HEALTH_SCORES:-}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_CUSTOMER_SUCCESS_ACCOUNT_DAILY: ${DOMO_DATASET_ID_CUSTOMER360_DEV_CUSTOMER_SUCCESS_ACCOUNT_DAILY:-}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_DATA_QUALITY_DASHBOARD_DAILY: ${DOMO_DATASET_ID_CUSTOMER360_DEV_DATA_QUALITY_DASHBOARD_DAILY:-}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_EXECUTIVE_CUSTOMER_KPIS_DAILY: ${DOMO_DATASET_ID_CUSTOMER360_DEV_EXECUTIVE_CUSTOMER_KPIS_DAILY:-}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_EXECUTIVE_SEGMENT_HEALTH_DAILY: ${DOMO_DATASET_ID_CUSTOMER360_DEV_EXECUTIVE_SEGMENT_HEALTH_DAILY:-}
+    DOMO_DATASET_ID_CUSTOMER360_DEV_PARTNER_PERFORMANCE_DAILY: ${DOMO_DATASET_ID_CUSTOMER360_DEV_PARTNER_PERFORMANCE_DAILY:-}
+    IMPARTNER_API_BASE_URL: ${IMPARTNER_API_BASE_URL:-}
+    IMPARTNER_API_TOKEN: ${IMPARTNER_API_TOKEN:-}
+    LICENSING_API_BASE_URL: ${LICENSING_API_BASE_URL:-}
+    LICENSING_API_TOKEN: ${LICENSING_API_TOKEN:-}
+    MARKETO_API_BASE_URL: ${MARKETO_API_BASE_URL:-}
+    MARKETO_API_TOKEN: ${MARKETO_API_TOKEN:-}
+    PRODUCT_USAGE_API_BASE_URL: ${PRODUCT_USAGE_API_BASE_URL:-}
+    PRODUCT_USAGE_API_TOKEN: ${PRODUCT_USAGE_API_TOKEN:-}
+    PYTHONPATH: /app/src
+    SALESFORCE_API_BASE_URL: ${SALESFORCE_API_BASE_URL:-}
+    SALESFORCE_API_TOKEN: ${SALESFORCE_API_TOKEN:-}
+    SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT:-local-dev}
+    SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD:-local_password}
+    SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-CUSTOMER360_DEV_ROLE}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER:-customer360_dev}
+    SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:-CUSTOMER360_DEV_WH}
+    ZENDESK_API_BASE_URL: ${ZENDESK_API_BASE_URL:-}
+    ZENDESK_API_TOKEN: ${ZENDESK_API_TOKEN:-}
+
+services:
+  customer360-cli:
+    <<: *customer360-airflow-common
+    profiles:
+      - tools
+    depends_on: {}
+    restart: "no"
+    command: ["customer360", "healthcheck"]
+
+  airflow-postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - airflow-postgres-data:/var/lib/postgresql/data
+    networks:
+      - customer360
+
+  airflow-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - customer360
+
+  airflow-init:
+    <<: *customer360-airflow-common
+    restart: "no"
+    entrypoint: ["/bin/bash", "/app/docker/airflow-init.sh"]
+
+  airflow-webserver:
+    <<: *customer360-airflow-common
+    command: ["airflow", "webserver"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-postgres:
+        condition: service_healthy
+      airflow-redis:
+        condition: service_healthy
+    ports:
+      - "${AIRFLOW_WEBSERVER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  airflow-scheduler:
+    <<: *customer360-airflow-common
+    command: ["airflow", "scheduler"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-postgres:
+        condition: service_healthy
+      airflow-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  airflow-worker:
+    <<: *customer360-airflow-common
+    command: ["airflow", "celery", "worker"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-postgres:
+        condition: service_healthy
+      airflow-redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  airflow-triggerer:
+    <<: *customer360-airflow-common
+    command: ["airflow", "triggerer"]
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      airflow-postgres:
+        condition: service_healthy
+      airflow-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type TriggererJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  airflow-logs:
+  airflow-postgres-data:
+
+networks:
+  customer360:
+    driver: bridge

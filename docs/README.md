@@ -6,6 +6,7 @@ Architecture, onboarding, data dictionary, runbooks, and design decision records
 
 - `architecture.md`: platform architecture and dependency direction.
 - `cicd.md`: GitHub Actions CI, Docker build, and deployment automation guide.
+- `containerization.md`: Docker image, Docker Compose, Airflow containers, and environment management.
 - `data_dictionary.md`: customer, enrichment, health, and reporting data definitions.
 - `onboarding.md`: first steps for local development.
 

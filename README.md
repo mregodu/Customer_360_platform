@@ -57,6 +57,19 @@ customer360 healthcheck
 pytest
 ```
 
+## Containerized Runtime
+
+```bash
+cp .env.example .env
+docker compose build
+docker compose up airflow-init
+docker compose up -d airflow-webserver airflow-scheduler airflow-worker airflow-triggerer
+```
+
+The Docker Compose stack runs Airflow webserver, scheduler, worker, triggerer,
+Postgres, Redis, and a reusable Customer 360 CLI container. See
+`docs/containerization.md` for Snowflake, Domo, and environment setup.
+
 ## Configuration
 
 Use `CUSTOMER360_CONFIG_PATH` to choose the active YAML config. Secrets must come from environment variables, Airflow connections, or a secret manager.

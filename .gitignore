@@ -1,0 +1,30 @@
+# Local environment and secrets.
+.env
+.env.*
+!.env.example
+
+# Python caches and test artifacts.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+.venv/
+
+# Local Airflow and Docker runtime state.
+airflow/logs/
+airflow/*.db
+logs/
+
+# Local-only files.
+.Rhistory
+Context.pdf
+data/raw/*
+data/processed/*
+!data/raw/README.md
+!data/processed/README.md
+notebooks/.ipynb_checkpoints/
